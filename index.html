@@ -72,6 +72,18 @@
           <span class="go">Check in →</span>
         </a>
       </section>
+      <section class="card" aria-labelledby="backup-heading">
+        <h2 id="backup-heading">Your data</h2>
+        <p class="muted backup-intro">Everything you log is saved only in this browser. Download a backup now and then, so a cleared browser or a new phone doesn't lose it.</p>
+        <div class="button-row">
+          <button type="button" class="button" id="backup-download">Download backup</button>
+          <label class="button-secondary file-button">
+            Restore from backup
+            <input type="file" id="backup-file" accept=".json,application/json" class="visually-hidden" />
+          </label>
+        </div>
+        <p class="note" id="backup-status" aria-live="polite"></p>
+      </section>
     </main>
 
     <script src="js/logic.js"></script>
@@ -79,5 +91,6 @@
     <script src="js/ui.js"></script>
     <script src="js/lineChart.js"></script>
     <script src="js/home.js"></script>
+    <script src="js/backup.js"></script>
   </body>
 </html>
