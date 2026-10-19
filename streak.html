@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Streak &amp; RPE · Workout Tracker</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <nav class="tab-bar" aria-label="Main">
+      <a href="index.html">Home</a>
+      <a href="workouts.html">Workouts</a>
+      <a href="calories.html">Calories</a>
+      <a href="streak.html" aria-current="page">Streak</a>
+    </nav>
+    <header class="site-header">
+      <a href="index.html" class="brand">Workout Tracker</a>
+    </header>
+
+    <main>
+      <section class="page-intro">
+        <h1>Streak &amp; RPE</h1>
+        <p>Check in each day you train and rate how hard the session felt.</p>
+      </section>
+
+      <section class="card" aria-labelledby="streak-heading">
+        <h2 id="streak-heading" class="visually-hidden">Your streak</h2>
+        <div class="stat-grid">
+          <div class="stat">
+            <span class="big-number" id="current-streak">0</span>
+            <span class="stat-label">Day streak</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="best-streak">0</span>
+            <span class="stat-label">Best streak (days)</span>
+          </div>
+        </div>
+        <p class="note">Your streak counts days in a row with a check-in. Missing a day resets it.</p>
+      </section>
+
+      <section class="card" aria-labelledby="checkin-heading">
+        <h2 id="checkin-heading">Today's check-in</h2>
+        <form class="form" id="checkin-form">
+          <label class="field" for="rpe">
+            How hard was today's workout? (RPE)
+          </label>
+          <div>
+            <span class="rpe-value" id="rpe-output" aria-live="polite"></span>
+            <input id="rpe" type="range" min="1" max="10" step="1" value="7" />
+            <div class="rpe-scale" aria-hidden="true"><span>1 · very easy</span><span>10 · max effort</span></div>
+          </div>
+          <label class="field">
+            Notes (optional)
+            <textarea id="checkin-note" rows="2" maxlength="200" placeholder="e.g. PR on squat, felt tired"></textarea>
+          </label>
+          <div class="button-row">
+            <button type="submit" class="button" id="checkin-button">Check in for today</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card" aria-labelledby="calendar-heading">
+        <div class="card-header">
+          <h2 id="calendar-heading">Last 4 weeks</h2>
+          <span class="muted">Numbers are RPE</span>
+        </div>
+        <div class="calendar" id="calendar"></div>
+        <div class="legend">
+          <span style="--swatch: var(--surface-muted)">Rest</span>
+          <span style="--swatch: var(--rpe-low)">RPE 1–4</span>
+          <span style="--swatch: var(--rpe-mid)">RPE 5–7</span>
+          <span style="--swatch: var(--rpe-high)">RPE 8–10</span>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="checkins-heading">
+        <h2 id="checkins-heading">Check-in history</h2>
+        <ul class="list" id="checkin-list"></ul>
+      </section>
+    </main>
+
+    <script src="js/logic.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/streak.js"></script>
+  </body>
+</html>

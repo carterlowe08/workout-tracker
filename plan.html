@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nutrition Plan · Workout Tracker</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <nav class="tab-bar" aria-label="Main">
+      <a href="index.html">Home</a>
+      <a href="workouts.html">Workouts</a>
+      <a href="calories.html" aria-current="page">Calories</a>
+      <a href="streak.html">Streak</a>
+    </nav>
+    <header class="site-header">
+      <a href="calories.html" class="back-link">← Calories</a>
+    </header>
+
+    <main>
+      <section class="page-intro">
+        <h1>Your nutrition plan</h1>
+        <p>Answer a few questions and we'll suggest daily calories and macros. You can change any number before saving.</p>
+      </section>
+
+      <section class="card" aria-labelledby="questions-heading">
+        <h2 id="questions-heading">About you</h2>
+        <form class="form" id="plan-form" novalidate>
+          <fieldset class="field choice-group">
+            <legend>Sex <span class="field-hint">(the calorie formula differs)</span></legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="sex" value="male" /> Male</label>
+              <label class="choice"><input type="radio" name="sex" value="female" /> Female</label>
+            </div>
+            <span class="field-error" id="sex-error"></span>
+          </fieldset>
+
+          <div class="field-row">
+            <label class="field">
+              Age (years)
+              <input id="age" type="number" inputmode="numeric" min="13" max="100" step="1" placeholder="e.g. 20" />
+              <span class="field-error" id="age-error"></span>
+            </label>
+            <div class="field">
+              <span id="height-label">Height</span>
+              <div class="height-inputs">
+                <input id="height-feet" type="number" inputmode="numeric" min="3" max="8" step="1" placeholder="ft" aria-label="Height, feet" />
+                <span class="unit">ft</span>
+                <input id="height-inches" type="number" inputmode="numeric" min="0" max="11" step="1" placeholder="in" aria-label="Height, inches" />
+                <span class="unit">in</span>
+              </div>
+              <span class="field-error" id="height-error"></span>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <label class="field">
+              Current weight (lb)
+              <input id="weight" type="number" inputmode="decimal" min="50" max="700" step="any" placeholder="e.g. 175" />
+              <span class="field-error" id="weight-error"></span>
+            </label>
+            <label class="field">
+              Goal weight (lb)
+              <input id="goal-weight" type="number" inputmode="decimal" min="50" max="700" step="any" placeholder="e.g. 165" />
+              <span class="field-error" id="goal-weight-error"></span>
+            </label>
+          </div>
+
+          <label class="field">
+            Activity level
+            <select id="activity"></select>
+          </label>
+
+          <div class="button-row">
+            <button type="submit" class="button">Suggest my plan</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card" aria-labelledby="goals-heading" id="goals-card">
+        <h2 id="goals-heading">Daily goals</h2>
+        <div class="plan-explanation" id="plan-explanation" aria-live="polite">
+          <p class="muted">Answer the questions above for a suggestion, or type your own numbers below.</p>
+        </div>
+        <form class="form" id="goals-form" novalidate>
+          <div class="goal-inputs">
+            <label class="field">
+              Calories
+              <input id="goal-calories" type="number" inputmode="numeric" min="800" max="10000" step="10" />
+            </label>
+            <label class="field">
+              Protein (g)
+              <input id="goal-protein" type="number" inputmode="numeric" min="0" max="600" step="1" />
+            </label>
+            <label class="field">
+              Carbs (g)
+              <input id="goal-carbs" type="number" inputmode="numeric" min="0" max="1500" step="1" />
+            </label>
+            <label class="field">
+              Fat (g)
+              <input id="goal-fat" type="number" inputmode="numeric" min="0" max="600" step="1" />
+            </label>
+          </div>
+          <p class="macro-check" id="macro-check" aria-live="polite"></p>
+          <span class="field-error" id="goals-error"></span>
+          <div class="button-row">
+            <button type="submit" class="button">Save plan</button>
+          </div>
+        </form>
+        <p class="note">These are estimates for healthy adults, not medical advice. If you have a health condition, check with a doctor or dietitian.</p>
+      </section>
+    </main>
+
+    <script src="js/logic.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/plan.js"></script>
+  </body>
+</html>

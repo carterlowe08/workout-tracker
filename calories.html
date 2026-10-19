@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Calories · Workout Tracker</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <nav class="tab-bar" aria-label="Main">
+      <a href="index.html">Home</a>
+      <a href="workouts.html">Workouts</a>
+      <a href="calories.html" aria-current="page">Calories</a>
+      <a href="streak.html">Streak</a>
+    </nav>
+    <header class="site-header">
+      <a href="index.html" class="brand">Workout Tracker</a>
+    </header>
+
+    <main>
+      <section class="page-intro">
+        <h1>Today</h1>
+        <p id="food-date"></p>
+      </section>
+
+      <section class="card week-strip" aria-label="Days with food logged this week">
+        <ol class="week-days" id="week-days"></ol>
+      </section>
+
+      <section class="card" aria-labelledby="eaten-heading">
+        <div class="card-header">
+          <h2 id="eaten-heading">Calories eaten</h2>
+          <a class="text-link" href="plan.html" id="plan-link">Set goals</a>
+        </div>
+        <div class="goal-line">
+          <p class="goal-amount"><span id="eaten-calories">0</span> cal <span class="goal-target" id="calorie-goal"></span></p>
+          <p class="goal-left" id="calories-left"></p>
+        </div>
+        <div class="progress" aria-hidden="true"><div class="progress-fill calories-fill" id="calorie-bar"></div></div>
+      </section>
+
+      <section class="card" aria-labelledby="macros-heading">
+        <h2 id="macros-heading">Macros</h2>
+        <div class="macro-grid" id="macro-grid"></div>
+        <p class="note" id="goal-note"></p>
+      </section>
+
+      <section aria-labelledby="diary-heading" class="diary">
+        <h2 id="diary-heading" class="section-title">Diary</h2>
+        <ul class="list meal-list" id="meal-list"></ul>
+      </section>
+
+      <h2 class="section-title">Exercise</h2>
+      <section class="card" aria-labelledby="totals-heading">
+        <h2 id="totals-heading" class="visually-hidden">Totals</h2>
+        <div class="stat-grid">
+          <div class="stat">
+            <span class="stat-value" id="calories-today">0</span>
+            <span class="stat-label">Burned today (kcal)</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="calories-week">0</span>
+            <span class="stat-label">Burned, last 7 days (kcal)</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="log-heading">
+        <h2 id="log-heading">Log a workout or cardio</h2>
+        <form class="form" id="calorie-form" novalidate>
+          <label class="field">
+            Activity
+            <select id="activity"></select>
+          </label>
+          <div class="field-row">
+            <label class="field">
+              Minutes
+              <input id="minutes" type="number" inputmode="numeric" min="1" max="600" step="1" placeholder="e.g. 60" />
+              <span class="field-error" id="minutes-error"></span>
+            </label>
+            <label class="field">
+              Bodyweight (lb)
+              <input id="bodyweight" type="number" inputmode="decimal" min="50" max="700" step="any" placeholder="e.g. 175" />
+              <span class="field-error" id="bodyweight-error"></span>
+            </label>
+          </div>
+          <p class="muted" id="estimate-preview" aria-live="polite">Enter minutes and bodyweight to see an estimate.</p>
+          <div class="button-row">
+            <button type="submit" class="button">Log calories</button>
+          </div>
+        </form>
+        <p class="note">Estimates use standard MET values for each activity, so treat them as ballpark numbers.</p>
+      </section>
+
+      <section class="card" aria-labelledby="history-heading">
+        <h2 id="history-heading">Exercise history</h2>
+        <ul class="list" id="calorie-list"></ul>
+      </section>
+    </main>
+
+    <dialog class="sheet" id="food-dialog" aria-labelledby="food-dialog-title">
+      <div class="sheet-header">
+        <h2 id="food-dialog-title">Add food</h2>
+        <button type="button" class="sheet-close" id="food-dialog-close" aria-label="Close">×</button>
+      </div>
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" class="tab" id="tab-search" aria-selected="true" aria-controls="panel-search">Search</button>
+        <button type="button" role="tab" class="tab" id="tab-manual" aria-selected="false" aria-controls="panel-manual">Manual entry</button>
+      </div>
+
+      <div role="tabpanel" id="panel-search" aria-labelledby="tab-search">
+        <form class="search-row" id="food-search-form">
+          <label class="visually-hidden" for="food-query">Search foods</label>
+          <input id="food-query" type="search" maxlength="80" placeholder="e.g. banana, chicken breast" autocomplete="off" />
+          <button type="submit" class="button small" id="food-search-button">Search</button>
+        </form>
+        <p class="search-status" id="food-search-status" aria-live="polite"></p>
+        <ul class="list food-results" id="food-results"></ul>
+
+        <div class="food-detail" id="food-detail" hidden>
+          <button type="button" class="back-button" id="food-detail-back">← Back to results</button>
+          <p class="row-title" id="food-detail-name"></p>
+          <p class="row-meta" id="food-detail-brand"></p>
+          <div class="field-row">
+            <label class="field">
+              Amount
+              <input id="food-quantity" type="number" inputmode="decimal" min="0" step="any" value="1" />
+            </label>
+            <label class="field">
+              Unit
+              <select id="food-portion"></select>
+            </label>
+          </div>
+          <span class="field-error" id="food-amount-error"></span>
+          <div class="nutrition-preview" id="food-preview"></div>
+          <button type="button" class="button" id="food-add-button">Add</button>
+        </div>
+      </div>
+
+      <form role="tabpanel" class="form" id="panel-manual" aria-labelledby="tab-manual" hidden novalidate>
+        <label class="field">
+          Food name
+          <input id="manual-name" type="text" maxlength="60" placeholder="e.g. Mom's lasagna" />
+          <span class="field-error" id="manual-name-error"></span>
+        </label>
+        <div class="field-row">
+          <label class="field">
+            Calories
+            <input id="manual-calories" type="number" inputmode="numeric" min="0" max="5000" step="1" />
+          </label>
+          <label class="field">
+            Protein (g)
+            <input id="manual-protein" type="number" inputmode="decimal" min="0" max="500" step="any" placeholder="0" />
+          </label>
+          <label class="field">
+            Carbs (g)
+            <input id="manual-carbs" type="number" inputmode="decimal" min="0" max="1000" step="any" placeholder="0" />
+          </label>
+          <label class="field">
+            Fat (g)
+            <input id="manual-fat" type="number" inputmode="decimal" min="0" max="500" step="any" placeholder="0" />
+          </label>
+        </div>
+        <span class="field-error" id="manual-error"></span>
+        <button type="submit" class="button" id="manual-add-button">Add</button>
+      </form>
+    </dialog>
+
+    <script src="js/logic.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/calories.js"></script>
+    <script src="js/foodSearch.js"></script>
+    <script src="js/food.js"></script>
+  </body>
+</html>

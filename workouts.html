@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Build Workout · Workout Tracker</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <nav class="tab-bar" aria-label="Main">
+      <a href="index.html">Home</a>
+      <a href="workouts.html" aria-current="page">Workouts</a>
+      <a href="calories.html">Calories</a>
+      <a href="streak.html">Streak</a>
+    </nav>
+    <header class="site-header">
+      <a href="index.html" class="brand">Workout Tracker</a>
+    </header>
+
+    <main>
+      <section class="page-intro">
+        <h1>Build a workout</h1>
+        <p>Start a routine or add exercises, then tap Start and End on each set.</p>
+      </section>
+
+      <section class="card" aria-labelledby="routines-heading">
+        <h2 id="routines-heading">Routines</h2>
+        <ul class="list routine-list" id="routine-list"></ul>
+      </section>
+
+      <div class="workout-layout">
+        <section class="card" aria-labelledby="draft-heading">
+          <h2 id="draft-heading">Your workout</h2>
+          <div class="draft-summary">
+            <div id="draft-ring"></div>
+            <div class="draft-summary-stats">
+              <div>
+                <span class="stat-value" id="draft-sets-done">0 / 0</span>
+                <span class="stat-label">Sets done</span>
+              </div>
+              <div>
+                <span class="stat-value" id="draft-minutes">0 min</span>
+                <span class="stat-label">Duration</span>
+              </div>
+              <div>
+                <span class="stat-value" id="draft-calories">0</span>
+                <span class="stat-label" id="draft-calories-label">Est. calories</span>
+              </div>
+            </div>
+          </div>
+          <label class="field">
+            Workout name (optional)
+            <input id="workout-name" type="text" maxlength="60" placeholder="e.g. Push day" />
+          </label>
+          <ul class="list exercise-cards" id="draft-list"></ul>
+          <div class="button-row">
+            <button type="button" class="button" id="save-workout">Save workout</button>
+            <button type="button" class="button-secondary" id="save-routine">Save as routine</button>
+            <button type="button" class="button-secondary" id="clear-workout">Clear</button>
+          </div>
+          <p class="note">Tap Start when you begin a set and End when you finish; ending a set starts your rest timer. Load = weight × reps of every finished set. Use weight 0 for bodyweight moves.</p>
+        </section>
+
+        <section class="card" aria-labelledby="library-heading">
+          <h2 id="library-heading">Exercise list</h2>
+          <label class="field">
+            Search exercises
+            <input id="exercise-search" type="search" placeholder="e.g. incline bench, cable, squat" autocomplete="off" />
+          </label>
+          <div class="filter-menu">
+            <p class="filter-label" id="muscle-filter-label">Muscle group</p>
+            <div class="chips chip-scroll" id="group-filters" role="group" aria-labelledby="muscle-filter-label"></div>
+            <p class="filter-label" id="equipment-filter-label">Equipment</p>
+            <div class="chips chip-scroll" id="equipment-filters" role="group" aria-labelledby="equipment-filter-label"></div>
+          </div>
+          <p class="result-count" id="library-count" aria-live="polite"></p>
+          <ul class="list scroll-list" id="library-list"></ul>
+
+          <form class="form custom-form" id="custom-form" novalidate>
+            <h3>Can't find it? Add a custom exercise</h3>
+            <div class="field-row">
+              <label class="field">
+                Exercise name
+                <input id="custom-name" type="text" maxlength="40" placeholder="e.g. Sled Push" />
+                <span class="field-error" id="custom-name-error"></span>
+              </label>
+              <label class="field">
+                Muscle group
+                <select id="custom-group"></select>
+              </label>
+            </div>
+            <p class="note" id="custom-group-note">We'll guess the muscle group from the name. Change it if it's wrong.</p>
+            <div class="button-row">
+              <button type="submit" class="button">Add to exercise list</button>
+            </div>
+          </form>
+        </section>
+      </div>
+
+      <section class="card" aria-labelledby="saved-heading">
+        <h2 id="saved-heading">Saved workouts</h2>
+        <ul class="list" id="saved-list"></ul>
+      </section>
+    </main>
+
+    <script src="js/logic.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/exerciseDatabase.js"></script>
+    <script src="js/exercises.js"></script>
+    <script src="js/restTimer.js"></script>
+    <script src="js/workouts.js"></script>
+  </body>
+</html>

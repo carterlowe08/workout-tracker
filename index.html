@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Workout Tracker</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <nav class="tab-bar" aria-label="Main">
+      <a href="index.html" aria-current="page">Home</a>
+      <a href="workouts.html">Workouts</a>
+      <a href="calories.html">Calories</a>
+      <a href="streak.html">Streak</a>
+    </nav>
+    <header class="site-header">
+      <a href="index.html" class="brand">Workout Tracker</a>
+    </header>
+
+    <main>
+      <section class="page-intro">
+        <h1>Overview</h1>
+        <p id="today-date"></p>
+      </section>
+
+      <section class="card" aria-labelledby="summary-heading">
+        <h2 id="summary-heading">Today</h2>
+        <div class="ring-row" id="today-rings"></div>
+      </section>
+
+      <section class="card" aria-labelledby="week-heading">
+        <h2 id="week-heading">This week</h2>
+        <div class="stat-grid">
+          <div class="stat">
+            <span class="stat-value" id="stat-streak">0</span>
+            <span class="stat-label">Day streak</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="stat-load">0</span>
+            <span class="stat-label">Load, last 7 days (lb)</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="progress-heading">
+        <div class="card-header">
+          <h2 id="progress-heading">Progress, last 12 weeks (lb)</h2>
+        </div>
+        <label class="field">
+          Show
+          <select id="progress-metric"></select>
+        </label>
+        <p class="progress-summary" id="progress-summary"></p>
+        <div id="progress-chart"></div>
+        <table class="visually-hidden" id="progress-table"></table>
+      </section>
+
+      <section class="feature-list" aria-label="Pages">
+        <a class="card feature-card" href="workouts.html">
+          <h2>Build a workout</h2>
+          <p>Pick exercises, log each set, and watch your load ring fill as you finish them.</p>
+          <span class="go">Build workout →</span>
+        </a>
+        <a class="card feature-card" href="calories.html">
+          <h2>Track calories</h2>
+          <p>Log an activity and how long you did it to estimate the calories you burned.</p>
+          <span class="go">Track calories →</span>
+        </a>
+        <a class="card feature-card" href="streak.html">
+          <h2>Streak &amp; RPE</h2>
+          <p>Check in after the gym, rate how hard it felt (RPE 1–10), and keep your streak alive.</p>
+          <span class="go">Check in →</span>
+        </a>
+      </section>
+    </main>
+
+    <script src="js/logic.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/lineChart.js"></script>
+    <script src="js/home.js"></script>
+  </body>
+</html>
