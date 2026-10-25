@@ -336,7 +336,30 @@
 
   function setsDoneText(exercise) {
     const doneCount = exercise.sets.filter((set) => set.done).length;
-    return `${exercise.group} · ${doneCount}/${exercise.sets.length} sets done`;
+    const warmupCount = Object.keys(exercise.warmups || {}).length;
+    const warmups = warmupCount > 0 ? ` · ${UI.plural(warmupCount, "warm-up")} done` : "";
+    return `${exercise.group} · ${doneCount}/${exercise.sets.length} sets done${warmups}`;
+  }
+
+  // Warm-ups are not sets: they add no load, but the time they were done is
+  // kept (exercise.warmups maps a step to that time) so they count toward
+  // the workout's duration and calories.
+  function warmupTracking(exercise) {
+    return {
+      done: exercise.warmups || {},
+      onToggle: (stepKey, isDone) => {
+        const warmups = { ...exercise.warmups };
+        if (isDone) {
+          warmups[stepKey] = Date.now();
+        } else {
+          delete warmups[stepKey];
+        }
+        exercise.warmups = warmups;
+        saveDraft();
+        renderDraft();
+        return warmups;
+      },
+    };
   }
 
   // Typing in a number box updates the draft and the totals without
@@ -492,7 +515,7 @@
         type: "button",
         class: "set-plates",
         "aria-label": `Show plates for ${setName}`,
-        onclick: () => PlateCalculator.open(set.weight, barType),
+        onclick: () => PlateCalculator.open(set.weight, barType, warmupTracking(exercise)),
       },
       platesIcon(),
     );

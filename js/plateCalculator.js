@@ -33,6 +33,8 @@ const PlateCalculator = (() => {
     },
   };
   const MAX_TARGET = { lb: 1500, kg: 700 };
+  // Warm-up weights are rounded to a weight you can load: one smallest plate per side.
+  const WARMUP_STEP = { lb: 5, kg: 2.5 };
   const MAX_BAR = { lb: 200, kg: 90 };
 
   // Plate weights need two decimals so the 1.25 kg plate doesn't show as 1.3.
@@ -40,6 +42,10 @@ const PlateCalculator = (() => {
 
   let barType = "olympic";
   let plateUnit = "lb";
+  // Which warm-up steps are done for the exercise this sheet was opened from,
+  // and who to tell when one is tapped: { done: { "40": time, ... }, onToggle },
+  // where onToggle(stepKey, isDone) saves the change and returns the new `done`.
+  let warmupContext = null;
 
   // ----- Sheet layout -----
 
@@ -56,6 +62,18 @@ const PlateCalculator = (() => {
   const plateKey = el("ul", { class: "plate-key", "aria-hidden": "true" });
   const summary = el("p", { class: "plate-summary", "aria-live": "polite" });
   const legend = el("p", { class: "note plate-legend" });
+  const warmupList = el("ul", { class: "warmup-list" });
+  const warmupSection = el(
+    "section",
+    { class: "warmup", "aria-labelledby": "warmup-title" },
+    el("h3", { id: "warmup-title" }, "Warm-up"),
+    el(
+      "p",
+      { class: "muted warmup-intro" },
+      "Tap Done as you finish each one. Warm-ups count toward time and calories, not load.",
+    ),
+    warmupList,
+  );
 
   const dialog = el(
     "dialog",
@@ -81,6 +99,7 @@ const PlateCalculator = (() => {
     drawing,
     plateKey,
     summary,
+    warmupSection,
     legend,
   );
   document.body.append(dialog);
@@ -253,6 +272,51 @@ const PlateCalculator = (() => {
     return input.value !== "" && value >= 0 && value <= max ? value : null;
   }
 
+  // The warm-up ladder for the target weight, with plates per side and a Done button for each step.
+  function renderWarmups(target, bar) {
+    const unit = plateUnit;
+    const steps = WorkoutLogic.warmupSteps(target, bar, WARMUP_STEP[unit]);
+    if (steps.length === 0) {
+      warmupList.replaceChildren(el("li", { class: "empty" }, "No warm-up needed at this weight."));
+      return;
+    }
+    warmupList.replaceChildren(
+      ...steps.map((step) => {
+        const { plates } = WorkoutLogic.platesPerSide(step.weight, bar, PLATE_SIZES[unit]);
+        const loading = plates.length > 0 ? `${plates.map(formatPlate).join(" + ")} per side` : "just the bar";
+        const isDone = Boolean(warmupContext?.done[step.key]);
+        const weightText = `${formatPlate(step.weight)} ${unit} × ${step.reps}`;
+        return el(
+          "li",
+          { class: isDone ? "warmup-step done" : "warmup-step" },
+          el(
+            "div",
+            {},
+            el("span", { class: "row-title" }, step.key === "bar" ? `Bar (${weightText})` : weightText),
+            el("span", { class: "row-meta" }, loading),
+          ),
+          warmupContext
+            ? el(
+                "button",
+                {
+                  type: "button",
+                  class: `set-step ${isDone ? "done" : "ready"}`,
+                  "aria-pressed": String(isDone),
+                  "aria-label": `${isDone ? "Undo" : "Mark done"}: warm-up ${weightText}`,
+                  onclick: () => {
+                    // onToggle saves the change and returns the updated list of done steps.
+                    warmupContext.done = warmupContext.onToggle(step.key, !isDone);
+                    update();
+                  },
+                },
+                isDone ? "✓" : "Done",
+              )
+            : null,
+        );
+      }),
+    );
+  }
+
   function update() {
     const unit = plateUnit;
     const target = readWeight(targetInput, MAX_TARGET[unit]);
@@ -261,6 +325,7 @@ const PlateCalculator = (() => {
       saveBarWeight(bar);
     }
     title.textContent = target === null ? "Plates" : `Plates for ${UI.formatNumber(target)} ${unit}`;
+    warmupSection.hidden = true;
     if (target === null || bar === null) {
       summary.textContent = "Enter a target weight and the bar's weight.";
       draw([]);
@@ -271,6 +336,8 @@ const PlateCalculator = (() => {
       draw([]);
       return;
     }
+    warmupSection.hidden = false;
+    renderWarmups(target, bar);
     const { plates, total } = WorkoutLogic.platesPerSide(target, bar, PLATE_SIZES[unit]);
     draw(plates);
     const perSide = plates.length > 0 ? plates.map(formatPlate).join(" + ") : "nothing, just the bar";
@@ -288,8 +355,10 @@ const PlateCalculator = (() => {
   }
 
   // Opens the sheet for a weight saved in pounds, shown in the app's chosen
-  // unit. `defaultBar` is "olympic", "ez" or "trap".
-  function open(weightInPounds, defaultBar = "olympic") {
+  // unit. `defaultBar` is "olympic", "ez" or "trap". `warmups` (optional) is
+  // { done, onToggle(stepKey, isDone) } for the exercise's warm-up checkmarks.
+  function open(weightInPounds, defaultBar = "olympic", warmups = null) {
+    warmupContext = warmups;
     barType = defaultBar;
     plateUnit = Units.current();
     targetInput.value = weightInPounds ? Units.fromPounds(weightInPounds, plateUnit) : "";

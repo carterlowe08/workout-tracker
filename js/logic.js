@@ -88,16 +88,26 @@ const WorkoutLogic = (() => {
     return Math.max(0, ...totals.values());
   }
 
+  // About how long one warm-up set takes, used to place it on the workout's clock.
+  const WARMUP_SET_MS = 60 * 1000;
+
   // Minutes from the first set's start to the last set's end; a set still
-  // running counts up to `now`. Sets checked off without times (logged before
-  // Start/End existed) count as 3 minutes each, rest included.
+  // running counts up to `now`. Warm-ups marked done (exercise.warmups maps a
+  // step to the time it was done) stretch that window, so warming up before
+  // the first set counts toward time and calories without adding load. Sets
+  // checked off without times (logged before Start/End existed) count as 3
+  // minutes each, rest included.
   function workoutMinutes(exercises, now) {
     const sets = exercises.flatMap((exercise) => exercise.sets);
     const timedSets = sets.filter((set) => set.startedAt);
+    const warmupTimes = exercises.flatMap((exercise) => Object.values(exercise.warmups || {}));
     let minutes = 0;
-    if (timedSets.length > 0) {
-      const start = Math.min(...timedSets.map((set) => set.startedAt));
-      const end = Math.max(...timedSets.map((set) => set.endedAt || now));
+    if (timedSets.length > 0 || warmupTimes.length > 0) {
+      const start = Math.min(
+        ...timedSets.map((set) => set.startedAt),
+        ...warmupTimes.map((time) => time - WARMUP_SET_MS),
+      );
+      const end = Math.max(...timedSets.map((set) => set.endedAt || now), ...warmupTimes);
       minutes = (end - start) / 60000;
     }
     const untimedDoneSets = sets.filter((set) => set.done && !set.startedAt).length;
@@ -331,6 +341,33 @@ const WorkoutLogic = (() => {
     return { plates, total: barWeight + perSide * 2 };
   }
 
+  // A warm-up ladder for a working weight: the empty bar, then about 40%, 60%
+  // and 80% of the working weight, each rounded to the nearest weight you can
+  // load (`step` is the smallest jump: 5 lb, or 2.5 kg). Steps that would be
+  // no heavier than the bar, or as heavy as the working weight, are skipped.
+  const WARMUP_LADDER = [
+    { key: "bar", share: 0, reps: 10 },
+    { key: "40", share: 0.4, reps: 5 },
+    { key: "60", share: 0.6, reps: 3 },
+    { key: "80", share: 0.8, reps: 2 },
+  ];
+
+  function warmupSteps(workingWeight, barWeight, step) {
+    if (!(workingWeight > barWeight)) {
+      return [];
+    }
+    const steps = [];
+    for (const { key, share, reps } of WARMUP_LADDER) {
+      const weight = share === 0 ? barWeight : Math.round((workingWeight * share) / step) * step;
+      const previous = steps[steps.length - 1];
+      const heavierThanLast = !previous || weight > previous.weight;
+      if ((share === 0 || weight > barWeight) && weight < workingWeight && heavierThanLast) {
+        steps.push({ key, weight, reps });
+      }
+    }
+    return steps;
+  }
+
   function rpeLabel(rpe) {
     if (rpe <= 2) return "Very easy";
     if (rpe <= 4) return "Easy";
@@ -357,6 +394,7 @@ const WorkoutLogic = (() => {
     PLATE_SIZES,
     PLATE_SIZES_KG,
     platesPerSide,
+    warmupSteps,
     nutritionForGrams,
     sumNutrition,
     macroPercents,
