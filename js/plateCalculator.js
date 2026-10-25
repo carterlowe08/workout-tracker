@@ -275,6 +275,7 @@ const PlateCalculator = (() => {
   // The warm-up ladder for the target weight, with plates per side and a Done button for each step.
   function renderWarmups(target, bar) {
     const unit = plateUnit;
+    document.getElementById("warmup-title").textContent = `Warm-up for your ${formatPlate(target)} ${unit} set`;
     const steps = WorkoutLogic.warmupSteps(target, bar, WARMUP_STEP[unit]);
     if (steps.length === 0) {
       warmupList.replaceChildren(el("li", { class: "empty" }, "No warm-up needed at this weight."));
@@ -284,6 +285,8 @@ const PlateCalculator = (() => {
       ...steps.map((step) => {
         const { plates } = WorkoutLogic.platesPerSide(step.weight, bar, PLATE_SIZES[unit]);
         const loading = plates.length > 0 ? `${plates.map(formatPlate).join(" + ")} per side` : "just the bar";
+        // How each step compares with the working set, e.g. "40% of 225".
+        const share = `${Math.round((step.weight / target) * 100)}% of ${formatPlate(target)}`;
         const isDone = Boolean(warmupContext?.done[step.key]);
         const weightText = `${formatPlate(step.weight)} ${unit} × ${step.reps}`;
         return el(
@@ -293,7 +296,7 @@ const PlateCalculator = (() => {
             "div",
             {},
             el("span", { class: "row-title" }, step.key === "bar" ? `Bar (${weightText})` : weightText),
-            el("span", { class: "row-meta" }, loading),
+            el("span", { class: "row-meta" }, `${loading} · ${share}`),
           ),
           warmupContext
             ? el(
@@ -357,7 +360,8 @@ const PlateCalculator = (() => {
   // Opens the sheet for a weight saved in pounds, shown in the app's chosen
   // unit. `defaultBar` is "olympic", "ez" or "trap". `warmups` (optional) is
   // { done, onToggle(stepKey, isDone) } for the exercise's warm-up checkmarks.
-  function open(weightInPounds, defaultBar = "olympic", warmups = null) {
+  // `options.showWarmup` scrolls straight to the warm-up section.
+  function open(weightInPounds, defaultBar = "olympic", warmups = null, options = {}) {
     warmupContext = warmups;
     barType = defaultBar;
     plateUnit = Units.current();
@@ -366,6 +370,9 @@ const PlateCalculator = (() => {
     renderChoices();
     update();
     dialog.showModal();
+    if (options.showWarmup && !warmupSection.hidden) {
+      warmupSection.scrollIntoView({ block: "start" });
+    }
   }
 
   return { open };

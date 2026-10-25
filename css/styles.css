@@ -1949,6 +1949,52 @@ input[type="range"] {
   color: #fff;
 }
 
+/* Exercise history */
+
+.exercise-name-button {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: var(--surface-raised);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.exercise-name-button:hover,
+.exercise-name-button:focus-visible {
+  color: var(--accent);
+  text-decoration-color: var(--accent);
+}
+
+.history-stats {
+  margin: 8px 0 4px;
+}
+
+.history-heading {
+  margin: 18px 0 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.history-session {
+  display: grid;
+  gap: 2px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.history-session:last-child {
+  border-bottom: none;
+}
+
 /* Rest timer */
 
 .rest-timer {

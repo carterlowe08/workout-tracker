@@ -181,7 +181,7 @@
             el(
               "span",
               { class: "row-title" },
-              exercise.name,
+              exerciseNameButton(exercise.name),
               exercise.custom ? el("span", { class: "custom-tag" }, "Custom") : null,
             ),
             el("span", { class: "row-meta" }, exerciseDetails(exercise)),
@@ -522,6 +522,45 @@
     );
   }
 
+  // An exercise's name, tappable to open its history.
+  function exerciseNameButton(name) {
+    return el(
+      "button",
+      {
+        type: "button",
+        class: "exercise-name-button",
+        "aria-label": `${name}: see history`,
+        onclick: () => ExerciseHistory.open(name),
+      },
+      name,
+    );
+  }
+
+  // Opens the warm-up guide for the heaviest set entered for this exercise.
+  function warmupButton(exercise) {
+    const barType = barTypeFor(exercise.name);
+    if (!barType) {
+      return null;
+    }
+    return el(
+      "button",
+      {
+        type: "button",
+        class: "button-secondary small",
+        "aria-label": `Warm-up for ${exercise.name}`,
+        onclick: () => {
+          const topSet = Math.max(0, ...exercise.sets.map((set) => set.weight));
+          if (!(topSet > 0)) {
+            UI.showToast("Type your working weight in a set first, then tap Warm-up.", true);
+            return;
+          }
+          PlateCalculator.open(topSet, barType, warmupTracking(exercise), { showWarmup: true });
+        },
+      },
+      "Warm-up",
+    );
+  }
+
   function renderExerciseCard(exercise, index) {
     const metaLine = el("span", { class: "row-meta" }, setsDoneText(exercise));
     const previousSets = lastTimeSets(exercise.name);
@@ -531,16 +570,21 @@
       el(
         "div",
         { class: "exercise-card-header" },
-        el("div", {}, el("span", { class: "row-title" }, exercise.name), metaLine),
+        el("div", {}, exerciseNameButton(exercise.name), metaLine),
         el(
-          "button",
-          {
-            type: "button",
-            class: "link-button",
-            "aria-label": `Remove ${exercise.name}`,
-            onclick: () => removeExercise(index),
-          },
-          "Remove",
+          "div",
+          { class: "row-actions" },
+          warmupButton(exercise),
+          el(
+            "button",
+            {
+              type: "button",
+              class: "link-button",
+              "aria-label": `Remove ${exercise.name}`,
+              onclick: () => removeExercise(index),
+            },
+            "Remove",
+          ),
         ),
       ),
       el(

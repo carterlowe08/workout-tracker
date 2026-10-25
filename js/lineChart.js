@@ -73,7 +73,11 @@ const LineChart = (() => {
     }
 
     // Label every few weeks so the dates don't crowd, always including the latest.
-    const labelEvery = WIDTH < 420 ? 4 : 3;
+    // Short charts label every point; longer ones every few so dates don't overlap.
+    let labelEvery = WIDTH < 420 ? 4 : 3;
+    if (points.length <= 5) {
+      labelEvery = 1;
+    }
     points.forEach((point, index) => {
       if ((points.length - 1 - index) % labelEvery === 0) {
         svg.append(textElement(xFor(index), HEIGHT - 8, "chart-axis", "middle", point.label));

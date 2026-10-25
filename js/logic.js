@@ -368,6 +368,47 @@ const WorkoutLogic = (() => {
     return steps;
   }
 
+  // Estimated one-rep max with the Epley formula: weight x (1 + reps / 30).
+  // A single rep is its own max. 185 lb x 8 reps -> about 234 lb.
+  function estimatedOneRepMax(weight, reps) {
+    if (!(weight > 0) || !(reps > 0)) {
+      return 0;
+    }
+    return reps === 1 ? weight : weight * (1 + reps / 30);
+  }
+
+  // Every saved session of one exercise, newest first:
+  // [{ date, workoutName, sets: [{ weight, reps }] }]. `workouts` is newest
+  // first, as saved. Workouts saved before per-set logging are skipped.
+  function exerciseSessions(workouts, exerciseName) {
+    const name = exerciseName.toLowerCase();
+    const sessions = [];
+    for (const workout of workouts) {
+      const sets = workout.exercises
+        .filter((exercise) => exercise.name.toLowerCase() === name && Array.isArray(exercise.sets))
+        .flatMap((exercise) => exercise.sets);
+      if (sets.length > 0) {
+        sessions.push({ date: workout.date, workoutName: workout.name, sets });
+      }
+    }
+    return sessions;
+  }
+
+  // The heaviest set (more reps breaks a tie) and the best estimated one-rep max.
+  function bestSets(sessions) {
+    let heaviest = null;
+    let bestEstimate = 0;
+    for (const set of sessions.flatMap((session) => session.sets)) {
+      const heavier = !heaviest || set.weight > heaviest.weight;
+      const sameWeightMoreReps = heaviest && set.weight === heaviest.weight && set.reps > heaviest.reps;
+      if (heavier || sameWeightMoreReps) {
+        heaviest = set;
+      }
+      bestEstimate = Math.max(bestEstimate, estimatedOneRepMax(set.weight, set.reps));
+    }
+    return { heaviest, bestEstimate };
+  }
+
   function rpeLabel(rpe) {
     if (rpe <= 2) return "Very easy";
     if (rpe <= 4) return "Easy";
@@ -395,6 +436,9 @@ const WorkoutLogic = (() => {
     PLATE_SIZES_KG,
     platesPerSide,
     warmupSteps,
+    estimatedOneRepMax,
+    exerciseSessions,
+    bestSets,
     nutritionForGrams,
     sumNutrition,
     macroPercents,
