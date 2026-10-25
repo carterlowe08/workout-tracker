@@ -1818,6 +1818,80 @@ input[type="range"] {
   font-weight: 700;
 }
 
+/* Workout history editor */
+
+.saved-hint {
+  margin: -6px 0 6px;
+  font-size: 0.85rem;
+}
+
+.saved-workout-open {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 4px 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.saved-workout-open:hover .row-title,
+.saved-workout-open:focus-visible .row-title {
+  color: var(--accent);
+}
+
+.editor-meta {
+  margin: -4px 0 4px;
+  font-size: 0.85rem;
+}
+
+.editor-summary {
+  margin: 0 0 4px;
+  font-weight: 700;
+}
+
+.editor-exercises {
+  margin: 12px 0;
+}
+
+.history-set-row {
+  display: grid;
+  grid-template-columns: 22px 1fr 1fr 32px;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+}
+
+.history-set-row input {
+  background: var(--surface);
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 8px 4px;
+}
+
+.editor-delete {
+  display: block;
+  margin: 4px auto 8px;
+}
+
+.sheet-footer {
+  position: sticky;
+  bottom: -18px;
+  margin: 0 -18px -18px;
+  padding: 12px 18px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.sheet-footer .field-error:empty {
+  display: none;
+}
+
 /* Rest timer */
 
 .rest-timer {

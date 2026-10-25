@@ -891,20 +891,49 @@
     renderLibrary();
   }
 
-  function deleteWorkout(id) {
-    if (!confirm("Delete this saved workout?")) {
-      return;
-    }
+  // Removes a saved workout and the calories-burned entry it added. Returns
+  // true on success. The caller has already asked the user to confirm.
+  function removeSavedWorkout(id) {
     const remaining = savedWorkouts.filter((workout) => workout.id !== id);
     if (!Store.write(KEYS.workouts, remaining)) {
       UI.showSaveError();
-      return;
+      return false;
     }
     savedWorkouts = remaining;
     const calorieEntries = Store.read(KEYS.calories, []);
     Store.write(KEYS.calories, calorieEntries.filter((entry) => entry.workoutId !== id));
-    renderSaved();
+    afterHistoryChange();
     UI.showToast("Workout deleted");
+    return true;
+  }
+
+  function deleteWorkout(id) {
+    if (confirm("Delete this saved workout?")) {
+      removeSavedWorkout(id);
+    }
+  }
+
+  // Saves an edited workout from the history editor. Returns true on success.
+  function updateSavedWorkout(updated) {
+    const workouts = savedWorkouts.map((workout) => (workout.id === updated.id ? updated : workout));
+    if (!Store.write(KEYS.workouts, workouts)) {
+      UI.showSaveError();
+      return false;
+    }
+    savedWorkouts = workouts;
+    afterHistoryChange();
+    UI.showToast(`Saved changes to ${updated.name}`);
+    return true;
+  }
+
+  // History feeds the "Last" column, the best-day ring and the saved list, so redraw them.
+  function afterHistoryChange() {
+    renderSaved();
+    renderDraft();
+  }
+
+  function openWorkout(workout) {
+    WorkoutEditor.open(workout, { onSave: updateSavedWorkout, onDelete: removeSavedWorkout });
   }
 
   // Workouts saved before per-set logging store a number of sets instead of a list.
@@ -928,9 +957,19 @@
           "li",
           { class: "row" },
           el(
-            "div",
-            {},
-            el("span", { class: "row-title" }, workout.name),
+            "button",
+            {
+              type: "button",
+              class: "saved-workout-open",
+              "aria-label": `View and edit ${workout.name}, ${UI.formatDate(workout.date)}`,
+              onclick: () => openWorkout(workout),
+            },
+            el(
+              "span",
+              { class: "row-title" },
+              workout.name,
+              el("span", { class: "meal-chevron", "aria-hidden": "true" }, "›"),
+            ),
             el(
               "span",
               { class: "row-meta" },
