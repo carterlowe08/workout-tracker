@@ -1927,6 +1927,28 @@ input[type="range"] {
   display: none;
 }
 
+/* "Are you sure?" sheet */
+
+.ask-sheet {
+  width: min(400px, calc(100% - 32px));
+}
+
+.ask-message {
+  margin: 0 0 18px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.ask-buttons {
+  justify-content: flex-end;
+}
+
+.button.danger {
+  background: var(--danger);
+  color: #fff;
+}
+
 /* Rest timer */
 
 .rest-timer {

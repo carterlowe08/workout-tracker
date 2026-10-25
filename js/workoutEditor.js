@@ -226,16 +226,18 @@ const WorkoutEditor = (() => {
     }
   }
 
-  function requestClose() {
-    if (hasChanges() && !confirm("Discard your changes to this workout?")) {
+  async function requestClose() {
+    const question = "Discard your changes to this workout?";
+    if (hasChanges() && !(await UI.ask(question, { confirmLabel: "Discard", danger: true }))) {
       return;
     }
     editing = null;
     dialog.close();
   }
 
-  function deleteWorkout() {
-    if (!confirm(`Delete "${editing.name}" from your history? This can't be undone.`)) {
+  async function deleteWorkout() {
+    const question = `Delete "${editing.name}" from your history? This can't be undone.`;
+    if (!(await UI.ask(question, { confirmLabel: "Delete", danger: true }))) {
       return;
     }
     if (callbacks.onDelete(editing.id)) {

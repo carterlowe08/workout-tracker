@@ -133,8 +133,9 @@
     UI.showToast(wasCheckedIn ? "Check-in updated" : "Checked in! Streak updated");
   }
 
-  function deleteCheckIn(day) {
-    if (!confirm(`Delete the check-in for ${UI.formatDate(day)}? This can break your streak.`)) {
+  async function deleteCheckIn(day) {
+    const question = `Delete the check-in for ${UI.formatDate(day)}? This can break your streak.`;
+    if (!(await UI.ask(question, { confirmLabel: "Delete", danger: true }))) {
       return;
     }
     const remaining = Object.fromEntries(Object.entries(checkIns).filter(([key]) => key !== day));

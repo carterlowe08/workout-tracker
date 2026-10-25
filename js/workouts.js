@@ -294,8 +294,9 @@
     UI.showToast(`Added ${name} (${exercise.group}) to the exercise list`);
   }
 
-  function deleteCustomExercise(name) {
-    if (!confirm(`Delete "${name}" from your exercise list? Saved workouts keep it.`)) {
+  async function deleteCustomExercise(name) {
+    const question = `Delete "${name}" from your exercise list? Saved workouts keep it.`;
+    if (!(await UI.ask(question, { confirmLabel: "Delete", danger: true }))) {
       return;
     }
     const remaining = customExercises.filter((exercise) => exercise.name !== name);
@@ -663,7 +664,7 @@
     return null;
   }
 
-  function saveWorkout() {
+  async function saveWorkout() {
     const sets = countSets();
     if (sets.done === 0) {
       UI.showToast("Finish at least one set (tap Start, then End) before saving.", true);
@@ -677,7 +678,7 @@
     }
     const unfinished = sets.total - sets.done;
     const unfinishedMessage = `${UI.plural(unfinished, "set")} not checked off won't be saved. Save anyway?`;
-    if (unfinished > 0 && !confirm(unfinishedMessage)) {
+    if (unfinished > 0 && !(await UI.ask(unfinishedMessage, { confirmLabel: "Save anyway" }))) {
       return;
     }
     // Only finished sets are saved; exercises with none finished are left out.
@@ -838,7 +839,7 @@
     );
   }
 
-  function saveRoutine() {
+  async function saveRoutine() {
     const name = draft.name.trim();
     if (!name) {
       UI.showToast("Type a workout name first. That becomes the routine's name.", true);
@@ -846,7 +847,8 @@
       return;
     }
     const existing = routines.find((routine) => routine.name.toLowerCase() === name.toLowerCase());
-    if (existing && !confirm(`Replace your "${existing.name}" routine with this workout?`)) {
+    const replaceQuestion = `Replace your "${existing?.name}" routine with this workout?`;
+    if (existing && !(await UI.ask(replaceQuestion, { confirmLabel: "Replace" }))) {
       return;
     }
     const routine = {
@@ -869,8 +871,9 @@
   }
 
   // Fills the workout with the routine's exercises and sets, ready to log.
-  function startRoutine(routine) {
-    if (draft.exercises.length > 0 && !confirm(`Replace your current workout with "${routine.name}"?`)) {
+  async function startRoutine(routine) {
+    const question = `Replace your current workout with "${routine.name}"?`;
+    if (draft.exercises.length > 0 && !(await UI.ask(question, { confirmLabel: "Replace" }))) {
       return;
     }
     draft = {
@@ -889,8 +892,9 @@
     UI.showToast(`Started ${routine.name}`);
   }
 
-  function deleteRoutine(routine) {
-    if (!confirm(`Delete the "${routine.name}" routine? Workouts you've saved stay.`)) {
+  async function deleteRoutine(routine) {
+    const question = `Delete the "${routine.name}" routine? Workouts you've saved stay.`;
+    if (!(await UI.ask(question, { confirmLabel: "Delete", danger: true }))) {
       return;
     }
     const updated = routines.filter((item) => item !== routine);
@@ -903,8 +907,9 @@
     UI.showToast(`Deleted routine "${routine.name}"`);
   }
 
-  function clearWorkout() {
-    if (!confirm("Clear this workout? The exercises you added will be removed.")) {
+  async function clearWorkout() {
+    const question = "Clear this workout? The exercises you added will be removed.";
+    if (!(await UI.ask(question, { confirmLabel: "Clear", danger: true }))) {
       return;
     }
     draft = { name: "", exercises: [] };
@@ -930,8 +935,8 @@
     return true;
   }
 
-  function deleteWorkout(id) {
-    if (confirm("Delete this saved workout?")) {
+  async function deleteWorkout(id) {
+    if (await UI.ask("Delete this saved workout?", { confirmLabel: "Delete", danger: true })) {
       removeSavedWorkout(id);
     }
   }

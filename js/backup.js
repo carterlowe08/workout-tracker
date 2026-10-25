@@ -65,7 +65,7 @@
     const question =
       `Replace everything in this browser with the backup from ${savedOn} ` +
       `(${describe(backup.data)})? Data here that isn't in the backup will be lost.`;
-    if (!confirm(question)) {
+    if (!(await UI.ask(question, { confirmLabel: "Restore", danger: true }))) {
       return;
     }
     for (const [name, key] of backupKeys) {

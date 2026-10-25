@@ -88,8 +88,8 @@
     );
   }
 
-  function deleteEntry(id) {
-    if (!confirm("Delete this entry?")) {
+  async function deleteEntry(id) {
+    if (!(await UI.ask("Delete this exercise entry?", { confirmLabel: "Delete", danger: true }))) {
       return;
     }
     const remaining = entries.filter((entry) => entry.id !== id);

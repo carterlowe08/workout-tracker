@@ -296,8 +296,8 @@
     return true;
   }
 
-  function deleteEntry(entry) {
-    if (!confirm(`Remove ${entry.name}?`)) {
+  async function deleteEntry(entry) {
+    if (!(await UI.ask(`Remove ${entry.name} from your diary?`, { confirmLabel: "Remove", danger: true }))) {
       return;
     }
     if (saveFoodLog(foodLog.filter((item) => item.id !== entry.id))) {
