@@ -70,7 +70,9 @@
     }
     for (const [name, key] of backupKeys) {
       const value = backup.data[name];
-      if (!Store.write(key, value === undefined ? null : value)) {
+      // Something the backup doesn't have is cleared here, not saved as null.
+      const saved = value === undefined || value === null ? Store.remove(key) : Store.write(key, value);
+      if (!saved) {
         UI.showSaveError();
         return;
       }

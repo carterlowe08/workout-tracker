@@ -310,6 +310,27 @@ const WorkoutLogic = (() => {
     };
   }
 
+  // Standard gym plates, heaviest first, in pounds and in kilograms.
+  const PLATE_SIZES = [45, 35, 25, 10, 5, 2.5];
+  const PLATE_SIZES_KG = [25, 20, 15, 10, 5, 2.5, 1.25];
+
+  // The plates to load on EACH side of the bar to reach `target`, heaviest
+  // first, using `plateSizes` (all in the same unit as the weights). When the
+  // exact weight can't be made, it returns the closest weight below the target.
+  function platesPerSide(target, barWeight, plateSizes = PLATE_SIZES) {
+    let remaining = (target - barWeight) / 2;
+    const plates = [];
+    for (const plate of plateSizes) {
+      // The tiny allowance keeps decimals like 2.5 from being missed by rounding.
+      while (remaining >= plate - 1e-9) {
+        plates.push(plate);
+        remaining -= plate;
+      }
+    }
+    const perSide = plates.reduce((sum, plate) => sum + plate, 0);
+    return { plates, total: barWeight + perSide * 2 };
+  }
+
   function rpeLabel(rpe) {
     if (rpe <= 2) return "Very easy";
     if (rpe <= 4) return "Easy";
@@ -333,6 +354,9 @@ const WorkoutLogic = (() => {
     currentStreak,
     bestStreak,
     guessMuscleGroup,
+    PLATE_SIZES,
+    PLATE_SIZES_KG,
+    platesPerSide,
     nutritionForGrams,
     sumNutrition,
     macroPercents,

@@ -12,6 +12,8 @@ const Store = (() => {
     planAnswers: "workoutTracker.planAnswers",
     restTimer: "workoutTracker.restTimer",
     restSeconds: "workoutTracker.restSeconds",
+    barWeights: "workoutTracker.barWeights",
+    weightUnit: "workoutTracker.weightUnit",
     checkIns: "workoutTracker.checkIns",
     bodyweight: "workoutTracker.bodyweightLb",
   };
@@ -28,7 +30,9 @@ const Store = (() => {
     checkKey(key);
     try {
       const raw = localStorage.getItem(key);
-      return raw === null ? fallback : JSON.parse(raw);
+      const value = raw === null ? null : JSON.parse(raw);
+      // A stored null (for example from an older backup) means "nothing saved".
+      return value === null ? fallback : value;
     } catch {
       return fallback;
     }
@@ -45,5 +49,15 @@ const Store = (() => {
     }
   }
 
-  return { KEYS, read, write };
+  function remove(key) {
+    checkKey(key);
+    try {
+      localStorage.removeItem(key);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  return { KEYS, read, write, remove };
 })();

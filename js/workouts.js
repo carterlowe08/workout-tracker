@@ -48,6 +48,9 @@
   const clearButton = document.getElementById("clear-workout");
   const saveRoutineButton = document.getElementById("save-routine");
   const routineList = document.getElementById("routine-list");
+  const premadeList = document.getElementById("premade-list");
+  const myRoutinesTab = document.getElementById("tab-my-routines");
+  const premadeTab = document.getElementById("tab-premade");
   const searchInput = document.getElementById("exercise-search");
   const groupFilters = document.getElementById("group-filters");
   const equipmentFilters = document.getElementById("equipment-filters");
@@ -325,8 +328,8 @@
     renderDraft();
   }
 
-  function removeSet(exercise, setIndex) {
-    exercise.sets.splice(setIndex, 1);
+  function removeLastSet(exercise) {
+    exercise.sets.pop();
     saveDraft();
     renderDraft();
   }
@@ -338,22 +341,29 @@
 
   // Typing in a number box updates the draft and the totals without
   // re-drawing the list, so the cursor stays where it is.
+  // Weights are typed in the chosen unit (lb or kg) and saved in pounds.
   function setInput(set, field, max, label) {
+    const isWeight = field === "weight";
     const input = el("input", {
       type: "number",
       inputmode: "decimal",
       min: "0",
-      max: String(max),
+      max: String(isWeight ? Units.fromPounds(max) : max),
       step: "any",
-      value: String(set[field]),
+      value: String(isWeight ? Units.fromPounds(set[field]) : set[field]),
       "aria-label": label,
     });
     input.addEventListener("input", () => {
       const value = Number(input.value);
-      set[field] = input.value === "" || Number.isNaN(value) ? 0 : value;
+      const typed = input.value === "" || Number.isNaN(value) ? 0 : value;
+      set[field] = isWeight ? Units.toPounds(typed) : typed;
       saveDraft();
       updateDraftSummary();
     });
+    // Select the whole number when the box is tapped, so typing replaces it
+    // instead of adding digits to the end. The short delay is needed on
+    // phones, which otherwise place the cursor after the tap and undo the selection.
+    input.addEventListener("focus", () => setTimeout(() => input.select(), 0));
     return input;
   }
 
@@ -423,27 +433,69 @@
         {
           class: "set-previous",
           "aria-label": previous
-            ? `Last time: ${previous.weight} pounds for ${previous.reps} reps`
+            ? `Last time: ${Units.format(previous.weight)} for ${previous.reps} reps`
             : "No previous set",
         },
-        previous ? `${UI.formatNumber(previous.weight)}×${previous.reps}` : "—",
+        previous ? `${UI.formatNumber(Units.fromPounds(previous.weight))}×${previous.reps}` : "—",
       ),
-      setInput(set, "weight", MAX_WEIGHT_LB, `${setName} weight in pounds`),
+      setInput(set, "weight", MAX_WEIGHT_LB, `${setName} weight in ${Units.current()}`),
       setInput(set, "reps", MAX_REPS, `${setName} reps`),
+      platesButton(exercise, set, setName),
       stepButton,
-      el(
-        "button",
-        {
-          type: "button",
-          class: "set-remove",
-          "aria-label": `Remove ${setName}`,
-          disabled: exercise.sets.length === 1,
-          onclick: () => removeSet(exercise, setIndex),
-        },
-        "×",
-      ),
     );
     return row;
+  }
+
+  // Which bar the plates button opens with, or null for exercises without a bar.
+  function barTypeFor(exerciseName) {
+    const name = exerciseName.toLowerCase();
+    if (/\b(trap|hex) bar\b/.test(name)) {
+      return "trap";
+    }
+    const libraryEntry = EXERCISE_LIBRARY.find((item) => item.name === exerciseName);
+    const equipment = libraryEntry ? libraryEntry.equipment : "";
+    if (equipment === "EZ bar" || /\bez[- ]?bar\b/.test(name)) {
+      return "ez";
+    }
+    if (equipment === "Barbell" || /\bbarbell\b/.test(name)) {
+      return "olympic";
+    }
+    return null;
+  }
+
+  // A small icon: a bar with a plate on each end.
+  function platesIcon() {
+    const namespace = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(namespace, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    for (const [tag, attributes] of [
+      ["line", { x1: 1, y1: 12, x2: 23, y2: 12 }],
+      ["rect", { x: 4, y: 5, width: 4, height: 14, rx: 1 }],
+      ["rect", { x: 16, y: 5, width: 4, height: 14, rx: 1 }],
+    ]) {
+      const shape = document.createElementNS(namespace, tag);
+      Object.entries(attributes).forEach(([name, value]) => shape.setAttribute(name, value));
+      svg.append(shape);
+    }
+    return svg;
+  }
+
+  function platesButton(exercise, set, setName) {
+    const barType = barTypeFor(exercise.name);
+    if (!barType) {
+      return el("span", {});
+    }
+    return el(
+      "button",
+      {
+        type: "button",
+        class: "set-plates",
+        "aria-label": `Show plates for ${setName}`,
+        onclick: () => PlateCalculator.open(set.weight, barType),
+      },
+      platesIcon(),
+    );
   }
 
   function renderExerciseCard(exercise, index) {
@@ -472,16 +524,27 @@
         { class: "set-row set-labels", "aria-hidden": "true" },
         el("span", {}, "Set"),
         el("span", {}, "Last"),
-        el("span", {}, "lb"),
+        el("span", {}, Units.current()),
         el("span", {}, "Reps"),
         el("span", {}, ""),
-        el("span", {}),
+        el("span", {}, ""),
       ),
       ...exercise.sets.map((set, setIndex) => renderSetRow(exercise, set, setIndex, previousSets)),
       el(
-        "button",
-        { type: "button", class: "add-set", onclick: () => addSet(exercise) },
-        "+ Add set",
+        "div",
+        { class: "set-buttons" },
+        el(
+          "button",
+          {
+            type: "button",
+            class: "add-set",
+            "aria-label": `Remove the last set of ${exercise.name}`,
+            disabled: exercise.sets.length === 1,
+            onclick: () => removeLastSet(exercise),
+          },
+          "− Remove set",
+        ),
+        el("button", { type: "button", class: "add-set", onclick: () => addSet(exercise) }, "+ Add set"),
       ),
     );
   }
@@ -536,15 +599,15 @@
     const bestDay = WorkoutLogic.bestDayTotal(savedWorkouts, (workout) => workout.load);
     let caption = "Finish sets to fill the ring";
     if (bestDay > 0) {
-      caption = `Best day: ${UI.formatNumber(bestDay)} lb`;
+      caption = `Best day: ${Units.format(bestDay, { whole: true })}`;
     } else if (load > 0) {
       caption = "Your first workout sets the bar";
     }
     draftRing.replaceChildren(
       UI.ring({
         fraction: bestDay > 0 ? load / bestDay : load > 0 ? 1 : 0,
-        value: UI.formatNumber(load),
-        unit: "lb",
+        value: UI.formatNumber(Math.round(Units.fromPounds(load))),
+        unit: Units.current(),
         label: "Load",
         caption,
         color: "var(--load)",
@@ -585,7 +648,8 @@
     }
     const invalidSet = findInvalidSet();
     if (invalidSet) {
-      UI.showToast(`Check ${invalidSet}: reps must be 1–${MAX_REPS}, weight 0–${MAX_WEIGHT_LB} lb.`, true);
+      const limits = `reps must be 1–${MAX_REPS}, weight 0–${Units.format(MAX_WEIGHT_LB)}`;
+      UI.showToast(`Check ${invalidSet}: ${limits}.`, true);
       return;
     }
     const unfinished = sets.total - sets.done;
@@ -623,7 +687,7 @@
     renderLibrary();
     renderSaved();
     const burned = workout.calories ? ` · ~${UI.formatNumber(workout.calories)} cal burned` : "";
-    UI.showToast(`Workout saved: ${UI.formatNumber(workout.load)} lb load${burned}`);
+    UI.showToast(`Workout saved: ${Units.format(workout.load, { whole: true })} load${burned}`);
   }
 
   function countRoutineSets(routine) {
@@ -677,6 +741,80 @@
     );
   }
 
+  function showRoutineTab(tabName) {
+    const isPremade = tabName === "premade";
+    myRoutinesTab.setAttribute("aria-selected", String(!isPremade));
+    premadeTab.setAttribute("aria-selected", String(isPremade));
+    document.getElementById("panel-my-routines").hidden = isPremade;
+    document.getElementById("panel-premade").hidden = !isPremade;
+  }
+
+  // A premade day as a routine: its sets and reps, with weights from the last
+  // time each exercise was logged (or 0 the first time).
+  function premadeDayAsRoutine(day) {
+    return {
+      name: day.name,
+      exercises: day.exercises.map((exercise) => {
+        const previous = lastTimeSets(exercise.name) || [];
+        const libraryEntry = EXERCISE_LIBRARY.find((item) => item.name === exercise.name);
+        return {
+          name: exercise.name,
+          group: libraryEntry ? libraryEntry.group : WorkoutLogic.guessMuscleGroup(exercise.name),
+          sets: Array.from({ length: exercise.sets }, (_, index) => ({
+            weight: (previous[index] || previous[previous.length - 1] || { weight: 0 }).weight,
+            reps: exercise.reps,
+          })),
+        };
+      }),
+    };
+  }
+
+  function renderPremade() {
+    premadeList.replaceChildren(
+      ...PREMADE_PROGRAMS.map((program) =>
+        el(
+          "section",
+          { class: "premade-program" },
+          el("h3", {}, program.name),
+          el("p", { class: "muted premade-description" }, program.description),
+          ...program.days.map((day) =>
+            el(
+              "div",
+              { class: "premade-day" },
+              el(
+                "div",
+                { class: "premade-day-header" },
+                el("span", { class: "row-title" }, day.name),
+                el(
+                  "button",
+                  {
+                    type: "button",
+                    class: "button small",
+                    "aria-label": `Start ${day.name}`,
+                    onclick: () => startRoutine(premadeDayAsRoutine(day)),
+                  },
+                  "Start",
+                ),
+              ),
+              el(
+                "ul",
+                { class: "premade-exercises" },
+                ...day.exercises.map((exercise) =>
+                  el(
+                    "li",
+                    {},
+                    el("span", {}, exercise.name),
+                    el("span", { class: "premade-sets" }, `${exercise.sets} × ${exercise.reps}`),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   function saveRoutine() {
     const name = draft.name.trim();
     if (!name) {
@@ -703,6 +841,7 @@
     }
     routines = updated;
     renderRoutines();
+    showRoutineTab("mine");
     UI.showToast(existing ? `Updated routine "${name}"` : `Saved routine "${name}"`);
   }
 
@@ -796,7 +935,7 @@
               "span",
               { class: "row-meta" },
               `${UI.formatDate(workout.date)} · ${UI.plural(workout.exercises.length, "exercise")} · ` +
-                `${UI.plural(countSavedSets(workout), "set")} · ${UI.formatNumber(workout.load)} lb load` +
+                `${UI.plural(countSavedSets(workout), "set")} · ${Units.format(workout.load, { whole: true })} load` +
                 (workout.minutes ? ` · ${workout.minutes} min` : "") +
                 (workout.calories ? ` · ~${UI.formatNumber(workout.calories)} cal` : ""),
             ),
@@ -843,6 +982,11 @@
   renderDraft();
   renderSaved();
   renderRoutines();
+  renderPremade();
+  myRoutinesTab.addEventListener("click", () => showRoutineTab("mine"));
+  premadeTab.addEventListener("click", () => showRoutineTab("premade"));
+  // New users have no routines of their own yet, so start them on the premade ones.
+  showRoutineTab(routines.length > 0 ? "mine" : "premade");
   // Keep the duration and calorie estimate current while a workout is going.
   setInterval(() => {
     if (draft.exercises.length > 0) {

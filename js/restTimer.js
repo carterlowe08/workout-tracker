@@ -123,7 +123,7 @@ const RestTimer = (() => {
   function stop() {
     clearInterval(tickTimer);
     tickTimer = null;
-    Store.write(KEYS.restTimer, null);
+    Store.remove(KEYS.restTimer);
     bar.hidden = true;
     document.body.classList.remove("rest-timer-open");
   }

@@ -25,7 +25,16 @@
 
       <section class="card" aria-labelledby="routines-heading">
         <h2 id="routines-heading">Routines</h2>
-        <ul class="list routine-list" id="routine-list"></ul>
+        <div class="tabs" role="tablist" aria-label="Routines">
+          <button type="button" role="tab" class="tab" id="tab-my-routines" aria-selected="true" aria-controls="panel-my-routines">My routines</button>
+          <button type="button" role="tab" class="tab" id="tab-premade" aria-selected="false" aria-controls="panel-premade">Premade</button>
+        </div>
+        <div role="tabpanel" id="panel-my-routines" aria-labelledby="tab-my-routines">
+          <ul class="list routine-list" id="routine-list"></ul>
+        </div>
+        <div role="tabpanel" id="panel-premade" aria-labelledby="tab-premade" hidden>
+          <div class="premade-list" id="premade-list"></div>
+        </div>
       </section>
 
       <div class="workout-layout">
@@ -106,9 +115,12 @@
     <script src="js/logic.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/ui.js"></script>
+    <script src="js/units.js"></script>
     <script src="js/exerciseDatabase.js"></script>
     <script src="js/exercises.js"></script>
+    <script src="js/premadeRoutines.js"></script>
     <script src="js/restTimer.js"></script>
+    <script src="js/plateCalculator.js"></script>
     <script src="js/workouts.js"></script>
   </body>
 </html>

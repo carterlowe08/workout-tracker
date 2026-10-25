@@ -19,16 +19,22 @@
     .filter((workout) => workout.date >= weekStart)
     .reduce((total, workout) => total + workout.load, 0);
 
+  // Pounds -> the chosen unit, rounded to whole numbers or, for single sets, one decimal (61.2 kg).
+  const inChosenUnit = (pounds, decimals = 0) => {
+    const scale = 10 ** decimals;
+    return Math.round(Units.fromPounds(pounds) * scale) / scale;
+  };
+
   // Today's total as a share of the best day, so the ring is full on a record day.
   const shareOfBest = (value, best) => (best > 0 ? value / best : 0);
 
   document.getElementById("today-rings").replaceChildren(
     UI.ring({
       fraction: shareOfBest(loadToday, bestLoadDay),
-      value: UI.formatNumber(loadToday),
-      unit: "lb",
+      value: UI.formatNumber(inChosenUnit(loadToday)),
+      unit: Units.current(),
       label: "Load",
-      caption: bestLoadDay > 0 ? `Best: ${UI.formatNumber(bestLoadDay)}` : "No workouts yet",
+      caption: bestLoadDay > 0 ? `Best: ${UI.formatNumber(inChosenUnit(bestLoadDay))}` : "No workouts yet",
       color: "var(--load)",
       size: "small",
     }),
@@ -61,7 +67,9 @@
     Object.keys(checkIns),
     today,
   );
-  document.getElementById("stat-load").textContent = UI.formatNumber(loadThisWeek);
+  document.getElementById("stat-load").textContent = UI.formatNumber(inChosenUnit(loadThisWeek));
+  document.getElementById("stat-load-label").textContent = `Load, last 7 days (${Units.current()})`;
+  document.getElementById("progress-heading").textContent = `Progress, last 12 weeks (${Units.current()})`;
 
   // ----- Progress chart: heaviest set per week for one exercise, or total weekly load -----
   const WEEKS_SHOWN = 12;
@@ -84,11 +92,12 @@
 
   const shortDate = (dateKey) => UI.formatDate(dateKey).replace(/^\w+, /, "");
 
-  function formatPounds(value, { short = false } = {}) {
+  // Chart values are already in the chosen unit (lb or kg).
+  function formatWeight(value, { short = false } = {}) {
     if (short) {
       return value >= 10000 ? `${UI.formatNumber(value / 1000)}k` : UI.formatNumber(value);
     }
-    return `${UI.formatNumber(value)} lb`;
+    return `${UI.formatNumber(value)} ${Units.current()}`;
   }
 
   function weeklySeries(metric) {
@@ -108,7 +117,7 @@
     const logged = points.filter((point) => point.value !== null);
     const what = metric === TOTAL_LOAD ? "Weekly load" : `Heaviest ${metric} set`;
     if (logged.length < 2) {
-      return `${what}: ${formatPounds(logged[0].value)}. Log another week to see a trend.`;
+      return `${what}: ${formatWeight(logged[0].value)}. Log another week to see a trend.`;
     }
     const first = logged[0];
     const last = logged[logged.length - 1];
@@ -117,11 +126,12 @@
       return `${what}: no change since the week of ${first.label}.`;
     }
     const direction = change > 0 ? "up" : "down";
-    return `${what} is ${direction} ${formatPounds(Math.abs(change))} since the week of ${first.label}.`;
+    return `${what} is ${direction} ${formatWeight(Math.abs(change))} since the week of ${first.label}.`;
   }
 
   function renderTable(points, metric) {
-    const heading = metric === TOTAL_LOAD ? "Total load (lb)" : `Heaviest ${metric} set (lb)`;
+    const unit = Units.current();
+    const heading = metric === TOTAL_LOAD ? `Total load (${unit})` : `Heaviest ${metric} set (${unit})`;
     table.replaceChildren(
       UI.el("caption", {}, `${heading}, by week`),
       UI.el("tr", {}, UI.el("th", {}, "Week"), UI.el("th", {}, heading)),
@@ -141,7 +151,7 @@
     const points = weeklySeries(metric).map(({ week, value }) => ({
       label: shortDate(week),
       longLabel: `Week of ${shortDate(week)}`,
-      value,
+      value: value === null ? null : inChosenUnit(value, metric === TOTAL_LOAD ? 0 : 1),
     }));
     if (points.every((point) => point.value === null)) {
       summary.textContent = "";
@@ -152,7 +162,7 @@
       return;
     }
     summary.textContent = describeChange(points, metric);
-    LineChart.draw(chartContainer, points, formatPounds);
+    LineChart.draw(chartContainer, points, formatWeight);
     renderTable(points, metric);
   }
 
