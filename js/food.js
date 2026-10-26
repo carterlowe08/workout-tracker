@@ -5,10 +5,10 @@
   const { el } = UI;
 
   const MEALS = [
-    { id: "breakfast", name: "Breakfast", icon: "☕" },
-    { id: "lunch", name: "Lunch", icon: "🥪" },
-    { id: "dinner", name: "Dinner", icon: "🍽️" },
-    { id: "snacks", name: "Snacks", icon: "🍎" },
+    { id: "breakfast", name: "Breakfast" },
+    { id: "lunch", name: "Lunch" },
+    { id: "dinner", name: "Dinner" },
+    { id: "snacks", name: "Snacks" },
   ];
   const MACROS = [
     { field: "carbs", label: "Carbs", letter: "C" },
@@ -28,11 +28,12 @@
   let selectedFood = null;
 
   const foodDate = document.getElementById("food-date");
-  const weekDays = document.getElementById("week-days");
+  const weekBars = document.getElementById("week-bars");
   const eatenCalories = document.getElementById("eaten-calories");
   const calorieGoal = document.getElementById("calorie-goal");
   const caloriesLeft = document.getElementById("calories-left");
-  const calorieBar = document.getElementById("calorie-bar");
+  const netCalories = document.getElementById("net-calories");
+  const macroSplit = document.getElementById("macro-split");
   const macroGrid = document.getElementById("macro-grid");
   const goalNote = document.getElementById("goal-note");
   const planLink = document.getElementById("plan-link");
@@ -82,39 +83,47 @@
     return true;
   }
 
-  function percentWidth(value, goal) {
-    return `${goal > 0 ? Math.min(value / goal, 1) * 100 : 0}%`;
-  }
-
-  // Sunday-to-Saturday, with a check on each day that has food logged.
+  // One bar per day for the last 7 days, as tall as that day's calories; today is highlighted.
   function renderWeek() {
     const today = UI.todayKey();
-    const [year, month, day] = today.split("-").map(Number);
-    const sunday = WorkoutLogic.addDays(today, -new Date(year, month - 1, day).getDay());
-    const loggedDays = new Set(foodLog.map((entry) => entry.date));
-    const days = [];
-    for (let offset = 0; offset < 7; offset += 1) {
-      const date = WorkoutLogic.addDays(sunday, offset);
-      const [y, m, d] = date.split("-").map(Number);
-      const weekday = new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "long" });
-      const logged = loggedDays.has(date);
-      days.push(
-        el(
+    const days = Array.from({ length: 7 }, (_, index) => WorkoutLogic.addDays(today, index - 6));
+    const caloriesByDay = days.map(
+      (date) => WorkoutLogic.sumNutrition(foodLog.filter((entry) => entry.date === date)).calories,
+    );
+    const tallest = Math.max(goals ? goals.calories : 0, ...caloriesByDay, 1);
+    weekBars.replaceChildren(
+      ...days.map((date, index) => {
+        const [year, month, day] = date.split("-").map(Number);
+        const weekday = new Date(year, month - 1, day).toLocaleDateString(undefined, { weekday: "long" });
+        const calories = caloriesByDay[index];
+        return el(
           "li",
           {
-            class: date === today ? "week-day today" : "week-day",
-            "aria-label": `${weekday}: ${logged ? "food logged" : "nothing logged"}`,
+            class: date === today ? "week-bar today" : "week-bar",
+            "aria-label": `${weekday}: ${calories > 0 ? `${UI.formatNumber(calories)} kcal` : "nothing logged"}`,
           },
-          el("span", { class: "week-letter", "aria-hidden": "true" }, weekday[0]),
-          el(
-            "span",
-            { class: logged ? "week-check logged" : "week-check", "aria-hidden": "true" },
-            logged ? "✓" : "",
-          ),
-        ),
-      );
-    }
-    weekDays.replaceChildren(...days);
+          el("span", {
+            class: "week-bar-fill",
+            "aria-hidden": "true",
+            style: `height: ${calories > 0 ? Math.max((calories / tallest) * 100, 6) : 4}%`,
+          }),
+          el("span", { class: "week-bar-day", "aria-hidden": "true" }, weekday.slice(0, 2)),
+        );
+      }),
+    );
+  }
+
+  function burnedToday() {
+    const today = UI.todayKey();
+    return Store.read(KEYS.calories, [])
+      .filter((entry) => entry.date === today)
+      .reduce((total, entry) => total + entry.calories, 0);
+  }
+
+  // Net = eaten minus burned. Redrawn when the exercise log changes too.
+  function renderNet() {
+    const eaten = WorkoutLogic.sumNutrition(todaysEntries()).calories;
+    netCalories.textContent = UI.formatNumber(eaten - burnedToday());
   }
 
   function renderTotals() {
@@ -122,34 +131,29 @@
     eatenCalories.textContent = UI.formatNumber(totals.calories);
     if (goals) {
       const left = goals.calories - totals.calories;
-      calorieGoal.textContent = `/ ${UI.formatNumber(goals.calories)}`;
-      caloriesLeft.textContent = left >= 0 ? `${UI.formatNumber(left)} left` : `${UI.formatNumber(-left)} over`;
+      calorieGoal.textContent = `of ${UI.formatNumber(goals.calories)} kcal`;
+      caloriesLeft.textContent =
+        left >= 0 ? `${UI.formatNumber(left)} kcal left to eat today` : `${UI.formatNumber(-left)} kcal over today's goal`;
     } else {
-      calorieGoal.textContent = "";
-      caloriesLeft.textContent = "No daily goal yet";
+      calorieGoal.textContent = "No daily goal yet";
+      caloriesLeft.textContent = "";
     }
-    calorieBar.style.width = percentWidth(totals.calories, goals ? goals.calories : 0);
+    renderNet();
 
+    // The bar splits today's calories by where they came from (carbs, fat, protein).
+    const percents = WorkoutLogic.macroPercents(totals);
+    macroSplit.replaceChildren(
+      ...MACROS.filter(({ field }) => percents[field] > 0).map(({ field }) =>
+        el("span", { class: `macro-split-part ${field}-fill`, style: `flex-grow: ${percents[field]}` }),
+      ),
+    );
     macroGrid.replaceChildren(
       ...MACROS.map(({ field, label }) =>
         el(
-          "div",
-          { class: "macro" },
+          "li",
+          { class: `macro-key macro-${field}` },
           el("span", { class: "macro-label" }, label),
-          el(
-            "p",
-            { class: "macro-amount" },
-            `${UI.formatNumber(totals[field])} g`,
-            goals ? el("span", { class: "goal-target" }, ` / ${UI.formatNumber(goals[field])}`) : null,
-          ),
-          el(
-            "div",
-            { class: "progress", "aria-hidden": "true" },
-            el("div", {
-              class: `progress-fill ${field}-fill`,
-              style: `width: ${percentWidth(totals[field], goals ? goals[field] : 0)}`,
-            }),
-          ),
+          `${UI.formatNumber(totals[field])}${goals ? ` / ${UI.formatNumber(goals[field])}` : ""} g`,
         ),
       ),
     );
@@ -172,14 +176,10 @@
     return entries.length === 1 ? entries[0].name : `${entries[0].name} and ${entries.length - 1} more`;
   }
 
+  // Each macro's share of the meal's calories, e.g. "C 45%  F 30%  P 25%".
   function mealStats(entries) {
-    const totals = WorkoutLogic.sumNutrition(entries);
-    if (entries.length === 0) {
-      return "0 cal";
-    }
-    const percents = WorkoutLogic.macroPercents(totals);
-    const shares = MACROS.map(({ field, letter }) => `${letter} ${percents[field]}%`).join("  ");
-    return `${UI.formatNumber(totals.calories)} cal · ${shares}`;
+    const percents = WorkoutLogic.macroPercents(WorkoutLogic.sumNutrition(entries));
+    return MACROS.map(({ field, letter }) => `${letter} ${percents[field]}%`).join("  ");
   }
 
   function renderFoodRow(entry) {
@@ -213,7 +213,7 @@
     const totals = WorkoutLogic.sumNutrition(entries);
     return el(
       "li",
-      { class: "card meal-card" },
+      { class: "meal-card" },
       el(
         "div",
         { class: "meal-top" },
@@ -233,7 +233,6 @@
               renderMeals();
             },
           },
-          el("span", { class: "meal-icon", "aria-hidden": "true" }, meal.icon),
           el(
             "span",
             { class: "meal-text" },
@@ -241,10 +240,11 @@
               "span",
               { class: "meal-name" },
               meal.name,
+              el("span", { class: "meal-calories" }, ` · ${UI.formatNumber(totals.calories)}`),
               el("span", { class: "meal-chevron", "aria-hidden": "true" }, "›"),
             ),
             el("span", { class: "meal-foods" }, mealSummary(entries)),
-            el("span", { class: "meal-stats" }, mealStats(entries)),
+            entries.length > 0 ? el("span", { class: "meal-stats" }, mealStats(entries)) : null,
           ),
         ),
         el(
@@ -554,9 +554,11 @@
     }
   });
 
+  document.addEventListener("burned-calories-changed", renderNet);
+
   foodDate.textContent = new Date().toLocaleDateString(undefined, {
     weekday: "long",
-    month: "long",
+    month: "short",
     day: "numeric",
   });
   renderAll();

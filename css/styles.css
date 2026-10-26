@@ -1,32 +1,40 @@
-/* Dark, high-contrast look: near-black background, bold numbers,
-   small uppercase labels, and one bright color per metric. */
+/* "Soft" dark look: a black background, rounded cards, and one deep-colored
+   tile per metric (blue load, orange calories, purple RPE, green streak),
+   with white text and a brighter shade of the tile's color for accents. */
+
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap");
 
 :root {
-  --bg: #08090b;
-  --surface: #14171b;
-  --surface-muted: #1d2126;
-  --surface-raised: #262b31;
-  --text: #f5f7fa;
-  --text-muted: #8a93a0;
-  --border: #23282e;
-  --load: #1fa8ff;
-  --calories: #2fd67b;
-  --rpe: #ff8a3d;
+  --bg: #000000;
+  --surface: #161618;
+  --surface-muted: #232327;
+  --surface-raised: #2e2e33;
+  --text: #ffffff;
+  --text-muted: #a1a1aa;
+  --border: #26262a;
+  --load: #7fa8ff;
+  --load-tile: #1b2a44;
+  --calories: #ffa066;
+  --calories-tile: #3a2717;
+  --rpe: #a98bff;
+  --rpe-tile: #2a2142;
+  --streak: #4cb873;
+  --streak-tile: #18301f;
   --carbs: #2ec4b6;
-  --fat: #9b5de5;
+  --fat: #e879c6;
   --protein: #f7b32b;
-  /* The load blue, one step deeper so a thin line passes the chart lightness check on this surface. */
-  --chart-line: #1a9cf0;
-  --accent: var(--load);
-  --accent-text: #021220;
-  --accent-soft: rgb(31 168 255 / 14%);
-  --done-soft: rgb(31 168 255 / 10%);
-  --danger: #ff5f5f;
-  --rpe-low: #5c3b22;
-  --rpe-mid: #b55a1b;
-  --rpe-high: #ff8a3d;
-  --radius: 16px;
-  --tab-bar-height: 64px;
+  --chart-line: var(--load);
+  /* Main actions are white buttons with black text. */
+  --accent: #ffffff;
+  --accent-text: #000000;
+  --accent-soft: rgb(255 255 255 / 10%);
+  --done-soft: rgb(76 184 115 / 10%);
+  --danger: #ff6b6b;
+  --rpe-low: #2a2142;
+  --rpe-mid: #5b47a0;
+  --rpe-high: #a98bff;
+  --radius: 24px;
+  --tab-bar-height: 72px;
   color-scheme: dark;
 }
 
@@ -43,7 +51,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 16px;
   line-height: 1.5;
   padding-bottom: calc(var(--tab-bar-height) + 24px);
@@ -51,7 +59,7 @@ body {
 }
 
 a {
-  color: var(--accent);
+  color: var(--load);
 }
 
 h1,
@@ -67,12 +75,10 @@ h1 {
   letter-spacing: -0.02em;
 }
 
-/* Section headings read as small uppercase labels. */
+/* Section headings read as small gray labels. */
 .card h2 {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
   color: var(--text-muted);
   margin-bottom: 14px;
 }
@@ -89,74 +95,100 @@ h1 {
 /* Header and navigation */
 
 .site-header {
-  padding: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 12px 16px;
   max-width: 760px;
   margin: 0 auto;
+  background: rgb(0 0 0 / 92%);
+  backdrop-filter: blur(12px);
 }
 
 .brand {
   color: var(--text-muted);
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-size: 0.9rem;
+  font-weight: 700;
   text-decoration: none;
 }
+
+/* Bottom tab bar, like a phone app: the current page is a white pill with
+   its icon and name; the other pages show just their icon (the name stays
+   for screen readers). It stays at the bottom on wide screens too. */
 
 .tab-bar {
   position: fixed;
   inset: auto 0 0 0;
-  height: var(--tab-bar-height);
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  background: rgb(8 9 11 / 92%);
+  height: calc(var(--tab-bar-height) + env(safe-area-inset-bottom));
+  padding: 0 18px env(safe-area-inset-bottom);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgb(0 0 0 / 92%);
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--border);
   z-index: 10;
+}
+
+@media (min-width: 720px) {
+  .tab-bar {
+    justify-content: center;
+    gap: 24px;
+  }
 }
 
 .tab-bar a {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
+  min-width: 56px;
+  height: 48px;
+  padding: 0 4px;
+  border-radius: 24px;
   color: var(--text-muted);
-  font-size: 0.75rem;
+  font-size: 0;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   text-decoration: none;
 }
 
+/* Each tab's icon is an outline drawing used as a mask, so it takes the
+   link's text color. */
+.tab-bar a::before {
+  content: "";
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  background: currentColor;
+  mask: var(--tab-icon) center / contain no-repeat;
+}
+
+.tab-bar a[href="index.html"] {
+  --tab-icon: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 10.5 12 3l9 7.5'/><path d='M5 9.5V21h14V9.5'/><path d='M10 21v-6h4v6'/></svg>");
+}
+
+.tab-bar a[href="workouts.html"] {
+  --tab-icon: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 7v10M3 9.5v5M18 7v10M21 9.5v5M6 12h12'/></svg>");
+}
+
+.tab-bar a[href="calories.html"] {
+  --tab-icon: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3c.5 4 5 6 5 11a5 5 0 0 1-10 0c0-2.5 1.5-4 2.5-5 .5 2 1.5 3 2.5 3 0-3-1-6 0-9Z'/></svg>");
+}
+
+.tab-bar a[href="streak.html"] {
+  --tab-icon: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='5' width='18' height='16' rx='2'/><path d='M3 10h18M8 3v4M16 3v4'/><path d='m9 15 2 2 4-4'/></svg>");
+}
+
 .tab-bar a[aria-current="page"] {
-  color: var(--text);
-  box-shadow: inset 0 3px 0 var(--accent);
+  padding: 0 20px;
+  color: var(--accent-text);
+  background: var(--accent);
+  font-size: 0.875rem;
 }
 
 @media (min-width: 720px) {
   body {
-    padding-bottom: 32px;
-  }
-
-  .tab-bar {
-    inset: 0 0 auto 0;
-    height: 56px;
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    border-top: none;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .tab-bar a {
-    padding: 0 18px;
-  }
-
-  .tab-bar a[aria-current="page"] {
-    box-shadow: inset 0 -3px 0 var(--accent);
-  }
-
-  .site-header {
-    margin-top: 56px;
+    padding-bottom: calc(var(--tab-bar-height) + 32px);
   }
 }
 
@@ -212,7 +244,7 @@ main {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px;
+  padding: 20px;
 }
 
 .card-header {
@@ -238,103 +270,6 @@ main {
   margin: 10px 0 0;
 }
 
-/* Rings */
-
-.ring-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.ring {
-  margin: 0;
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  text-align: center;
-}
-
-.ring-dial {
-  position: relative;
-  width: 100%;
-}
-
-.ring-large .ring-dial {
-  width: 160px;
-}
-
-.ring-small .ring-dial {
-  max-width: 120px;
-}
-
-.ring-svg {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.ring-track,
-.ring-progress {
-  fill: none;
-  stroke-width: 9;
-}
-
-.ring-track {
-  stroke: var(--surface-raised);
-}
-
-.ring-progress {
-  stroke-linecap: round;
-  transform: rotate(-90deg);
-  transform-origin: 60px 60px;
-  transition: stroke-dashoffset 0.4s ease;
-  filter: drop-shadow(0 0 6px currentcolor);
-}
-
-.ring-center {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.ring-value {
-  font-size: 1.9rem;
-  font-weight: 800;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-}
-
-.ring-small .ring-value {
-  font-size: clamp(1rem, 5.5vw, 1.5rem);
-}
-
-.ring-unit {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-
-.ring figcaption {
-  display: grid;
-  gap: 2px;
-}
-
-.ring-label {
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.ring-caption {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
 /* Stats */
 
 .stat-grid {
@@ -345,8 +280,228 @@ main {
 
 .stat {
   background: var(--surface-muted);
-  border-radius: 12px;
-  padding: 14px;
+  border-radius: 20px;
+  padding: 16px;
+}
+
+/* Colored tiles: each metric gets a deep shade of its color, with the label
+   in a brighter shade of the same color. */
+
+.tile-load {
+  --tile: var(--load-tile);
+  --tile-accent: var(--load);
+}
+
+.tile-calories {
+  --tile: var(--calories-tile);
+  --tile-accent: var(--calories);
+}
+
+.tile-rpe {
+  --tile: var(--rpe-tile);
+  --tile-accent: var(--rpe);
+}
+
+.tile-streak {
+  --tile: var(--streak-tile);
+  --tile-accent: var(--streak);
+}
+
+.stat[class*="tile-"] {
+  background: var(--tile);
+}
+
+.stat[class*="tile-"] .stat-label {
+  color: var(--tile-accent);
+}
+
+/* Home page tiles: rounded blocks in a deep shade of the metric's color. */
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 28px;
+  background: var(--tile);
+  color: var(--text);
+  text-decoration: none;
+}
+
+a.tile:focus-visible {
+  outline: 2px solid var(--tile-accent);
+  outline-offset: 2px;
+}
+
+.tile-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tile-label {
+  display: block;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--tile-accent);
+}
+
+.tile-number {
+  display: block;
+  margin: 4px 0 0;
+  font-size: 2.75rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tile-number-small {
+  margin: 0 0 4px;
+  font-size: 1.9rem;
+  letter-spacing: -0.03em;
+}
+
+.tile-unit {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--tile-accent);
+}
+
+.tile-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.tile-caption {
+  margin: -6px 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--tile-accent);
+}
+
+.tile-bar {
+  height: 10px;
+  border-radius: 5px;
+  background: rgb(255 255 255 / 14%);
+  overflow: hidden;
+}
+
+.tile-bar-fill {
+  width: 0;
+  height: 100%;
+  border-radius: 5px;
+  background: var(--tile-accent);
+  transition: width 0.4s ease;
+}
+
+.sparkline svg {
+  display: block;
+  width: 96px;
+  height: 48px;
+}
+
+.sparkline polyline {
+  fill: none;
+  stroke: var(--tile-accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sparkline circle {
+  fill: var(--tile-accent);
+}
+
+.tile-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.tile-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 10%);
+  color: var(--tile-accent);
+}
+
+.tile-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.rpe-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 38px;
+}
+
+.rpe-bars span {
+  flex: 1;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 14%);
+}
+
+.rpe-bars span.filled {
+  background: var(--tile-accent);
+}
+
+.week-dots {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.week-dot-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--tile-accent);
+}
+
+.week-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid rgb(255 255 255 / 14%);
+}
+
+.week-dot.today {
+  border-style: dashed;
+  border-color: var(--tile-accent);
+}
+
+/* A checked-in day: a green circle with a dark check mark. */
+.week-dot.checked {
+  border: none;
+  background: var(--tile-accent) url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230b1a10' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'><path d='m5 12 5 5 9-10'/></svg>") center / 14px no-repeat;
+}
+
+.home-intro h1 {
+  font-size: 1.9rem;
+}
+
+.start-workout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 58px;
+  font-size: 1.05rem;
+  text-decoration: none;
 }
 
 .stat-value {
@@ -361,62 +516,9 @@ main {
 .stat-label {
   display: block;
   margin-top: 4px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.big-number {
-  display: block;
-  font-size: 3rem;
-  font-weight: 800;
-  line-height: 1;
-  color: var(--rpe);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Home page feature cards */
-
-.feature-list {
-  display: grid;
-  gap: 12px;
-}
-
-.feature-card {
-  display: block;
-  color: var(--text);
-  text-decoration: none;
-  transition: border-color 0.15s;
-}
-
-.feature-card:hover,
-.feature-card:focus-visible {
-  border-color: var(--accent);
-}
-
-.card.feature-card h2 {
-  font-size: 1.1rem;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--text);
-  margin-bottom: 4px;
-}
-
-.feature-card p {
-  margin: 0;
-  color: var(--text-muted);
-}
-
-.feature-card .go {
-  display: inline-block;
-  margin-top: 10px;
-  color: var(--accent);
   font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-muted);
 }
 
 /* Lists */
@@ -474,8 +576,6 @@ main {
   gap: 6px;
   font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
   color: var(--text-muted);
 }
 
@@ -505,7 +605,7 @@ textarea {
 
 input::placeholder,
 textarea::placeholder {
-  color: #5d6570;
+  color: #71717a;
 }
 
 input:focus,
@@ -531,10 +631,8 @@ input[aria-invalid="true"] {
 .button,
 .button-secondary {
   font: inherit;
-  font-size: 0.85rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 0.95rem;
+  font-weight: 700;
   border-radius: 999px;
   padding: 10px 20px;
   min-height: 44px;
@@ -621,20 +719,43 @@ input[aria-invalid="true"] {
   }
 }
 
-.draft-summary {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+/* Workout status tile: duration, totals, and one segment per set. */
+.workout-status {
   margin-bottom: 16px;
 }
 
-.draft-summary .ring-large .ring-dial {
-  width: 140px;
+.workout-status .tile-top {
+  align-items: flex-end;
 }
 
-.draft-summary-stats {
+.workout-status .tile-number {
+  flex-shrink: 0;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.workout-totals {
+  margin: 0;
+  text-align: right;
+}
+
+.set-segments {
   display: grid;
-  gap: 14px;
+  gap: 4px;
+}
+
+.set-segments:empty {
+  display: none;
+}
+
+.set-segments span {
+  height: 8px;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 14%);
+}
+
+.set-segments span.filled {
+  background: var(--tile-accent);
 }
 
 .exercise-cards {
@@ -651,8 +772,15 @@ input[aria-invalid="true"] {
 
 .exercise-card {
   background: var(--surface-muted);
-  border-radius: 14px;
+  border-radius: 20px;
   padding: 14px;
+}
+
+/* Warm-up is a sand-colored chip, matching the calories tile. */
+.warmup-button {
+  background: var(--calories-tile);
+  border-color: transparent;
+  color: #ffc9a0;
 }
 
 .exercise-card-header {
@@ -664,32 +792,39 @@ input[aria-invalid="true"] {
 
 .set-row {
   display: grid;
-  grid-template-columns: 16px 44px 1fr 1fr 26px 50px;
+  grid-template-columns: 26px 40px 1fr 1fr 26px 48px;
   align-items: center;
   gap: 5px;
   padding: 4px;
-  border-radius: 10px;
+  border-radius: 14px;
   transition: background 0.15s;
-}
-
-.set-row.done {
-  background: var(--done-soft);
 }
 
 .set-labels {
   text-align: center;
   font-size: 0.65rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
   color: var(--text-muted);
   padding-bottom: 0;
 }
 
-.set-number {
-  text-align: center;
+/* The set number sits in a small rounded square, like the set buttons. */
+.set-row:not(.set-labels) .set-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--surface-raised);
+  font-size: 0.75rem;
   font-weight: 800;
   color: var(--text-muted);
+}
+
+.set-row.active .set-number {
+  background: var(--load);
+  color: #0b1424;
 }
 
 .set-previous {
@@ -704,50 +839,51 @@ input[aria-invalid="true"] {
 }
 
 .set-row input {
-  background: var(--surface);
+  background: var(--surface-raised);
+  border-color: transparent;
   text-align: center;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   padding: 8px 4px;
 }
 
+/* Start -> End -> ✓ button: a rounded square that fills in as the set goes on. */
 .set-step {
-  width: 50px;
+  width: 48px;
   height: 44px;
   padding: 0;
-  border-radius: 999px;
-  border: 2px solid var(--accent);
+  border-radius: 10px;
+  border: 2px solid #3a3a40;
   background: transparent;
-  color: var(--accent);
+  color: var(--text);
   font: inherit;
   font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
 
 .set-step.active {
-  background: var(--rpe);
-  border-color: var(--rpe);
-  color: #1a0d03;
+  background: var(--load);
+  border-color: var(--load);
+  color: #0b1424;
   animation: pulse 1.4s ease-in-out infinite;
 }
 
 .set-step.done {
-  background: var(--accent);
-  color: var(--accent-text);
+  background: var(--streak);
+  border-color: var(--streak);
+  color: #0b1a10;
   font-size: 1.1rem;
 }
 
 .set-row.active {
-  background: rgb(255 138 61 / 10%);
+  background: var(--load-tile);
 }
 
 @keyframes pulse {
   50% {
-    box-shadow: 0 0 0 6px rgb(255 138 61 / 25%);
+    box-shadow: 0 0 0 5px rgb(127 168 255 / 25%);
   }
 }
 
@@ -793,15 +929,13 @@ input[aria-invalid="true"] {
   margin-top: 8px;
   padding: 10px;
   min-height: 40px;
-  border: 1px dashed var(--surface-raised);
-  border-radius: 10px;
-  background: none;
-  color: var(--accent);
+  border: none;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--text);
   font: inherit;
   font-size: 0.8rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   cursor: pointer;
 }
 
@@ -815,8 +949,6 @@ input[aria-invalid="true"] {
   margin: 0;
   font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
   color: var(--text-muted);
 }
 
@@ -963,113 +1095,108 @@ input[aria-invalid="true"] {
 
 /* Calories page: food diary */
 
+.page-intro-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.page-intro-row .text-link {
+  padding: 8px 0;
+}
+
 .section-title {
-  font-size: 1.35rem;
+  font-size: 1.15rem;
   font-weight: 800;
-  margin: 8px 0 0;
+  margin: 8px 4px 0;
 }
 
-.week-strip {
-  padding: 14px 10px;
-}
-
-.week-days {
+/* Last 7 days of calories eaten as bars; today is the bright one. */
+.week-bars {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.week-bar {
+  display: grid;
+  grid-template-rows: 70px auto;
+  gap: 8px;
   text-align: center;
 }
 
-.week-day {
-  display: grid;
-  justify-items: center;
-  gap: 6px;
+.week-bar-fill {
+  align-self: end;
+  border-radius: 8px;
+  background: var(--calories-tile);
 }
 
-.week-letter {
-  font-size: 0.75rem;
+.week-bar.today .week-bar-fill {
+  background: var(--calories);
+}
+
+.week-bar-day {
+  font-size: 0.7rem;
   font-weight: 700;
   color: var(--text-muted);
 }
 
-.week-day.today .week-letter {
+.week-bar.today .week-bar-day {
   color: var(--text);
 }
 
-.week-day.today .week-letter::after {
-  content: "";
-  display: block;
-  width: 4px;
-  height: 4px;
-  margin: 2px auto 0;
-  border-radius: 50%;
-  background: var(--accent);
+.net-card {
+  display: grid;
+  gap: 12px;
 }
 
-.week-check {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 2px solid var(--surface-raised);
-  font-size: 0.85rem;
-  font-weight: 800;
-}
-
-.week-check.logged {
-  background: var(--calories);
-  border-color: var(--calories);
-  color: #04170c;
-}
-
-.goal-line {
+.net-top {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
 }
 
-.goal-amount {
+.card .net-top h2 {
   margin: 0;
-  font-size: 1.6rem;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.net-amount {
+  margin: 0;
+  font-size: 1.4rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 
-.goal-target {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--text-muted);
-}
-
-.goal-left {
-  margin: 0;
+.net-amount .unit {
   font-size: 0.85rem;
+}
+
+.net-left {
+  margin: -8px 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
   color: var(--text-muted);
 }
 
-.progress {
-  height: 10px;
-  border-radius: 999px;
-  background: var(--surface-raised);
+.net-left:empty {
+  display: none;
+}
+
+/* Today's calories split by macro, as one bar with three colored parts. */
+.macro-split {
+  display: flex;
+  gap: 2px;
+  height: 12px;
+  border-radius: 6px;
   overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  width: 0;
-  border-radius: 999px;
-  transition: width 0.4s ease;
-}
-
-.calories-fill {
-  background: var(--calories);
+  background: var(--surface-raised);
 }
 
 .carbs-fill {
@@ -1084,77 +1211,87 @@ input[aria-invalid="true"] {
   background: var(--protein);
 }
 
-.macro-grid {
+.macro-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-}
-
-.macro-label {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-.macro-amount {
-  margin: 2px 0 8px;
-  font-size: 1.05rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  font-size: 0.9rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 
-.macro-amount .goal-target {
+.macro-legend .macro-label {
+  display: block;
   font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.macro-carbs .macro-label {
+  color: var(--carbs);
+}
+
+.macro-fat .macro-label {
+  color: var(--fat);
+}
+
+.macro-protein .macro-label {
+  color: var(--protein);
 }
 
 .diary {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .meal-list {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .meal-card {
-  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--surface);
 }
 
 .meal-top {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-right: 16px;
+  padding-right: 14px;
 }
 
 .meal-toggle {
   flex: 1;
+  min-width: 0;
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 16px;
+  padding: 14px 4px 14px 18px;
   background: none;
   border: none;
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
-  border-radius: var(--radius);
-}
-
-.meal-icon {
-  font-size: 1.4rem;
-  line-height: 1.2;
+  border-radius: 22px;
 }
 
 .meal-text {
   display: grid;
   gap: 2px;
+  min-width: 0;
 }
 
 .meal-name {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 800;
+}
+
+.meal-calories {
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 .meal-chevron {
@@ -1169,11 +1306,16 @@ input[aria-invalid="true"] {
 }
 
 .meal-foods {
+  font-size: 0.85rem;
+  font-weight: 600;
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .meal-stats {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -1181,13 +1323,27 @@ input[aria-invalid="true"] {
 .log-button {
   flex-shrink: 0;
   font: inherit;
-  font-weight: 800;
-  padding: 8px 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0 16px;
   min-height: 40px;
-  border-radius: 999px;
+  border-radius: 10px;
   border: none;
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--surface-raised);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.dashed-button {
+  min-height: 50px;
+  margin-top: 4px;
+  border: 1.5px dashed #3a3a40;
+  border-radius: 22px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
   cursor: pointer;
 }
 
@@ -1337,7 +1493,7 @@ input[aria-invalid="true"] {
   padding: 6px 0;
   border: none;
   background: none;
-  color: var(--accent);
+  color: var(--load);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -1371,7 +1527,7 @@ input[aria-invalid="true"] {
 
 .back-link,
 .text-link {
-  color: var(--accent);
+  color: var(--load);
   font-size: 0.85rem;
   font-weight: 700;
   text-decoration: none;
@@ -1508,16 +1664,66 @@ input[type="range"] {
   color: var(--text-muted);
 }
 
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.card .month-nav h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.icon-square {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: var(--surface-raised);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.icon-square svg {
+  width: 18px;
+  height: 18px;
+}
+
+.icon-square:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.month-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+  margin-bottom: 6px;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
 .calendar {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
 }
 
 .calendar-day {
   aspect-ratio: 1;
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface-muted);
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1530,17 +1736,120 @@ input[type="range"] {
   outline-offset: 1px;
 }
 
+.calendar-day.blank,
+.calendar-day.future {
+  background: none;
+}
+
+.calendar-day.future {
+  color: #52525b;
+}
+
 .calendar-day.rpe-low {
   background: var(--rpe-low);
+  color: var(--text);
 }
 
 .calendar-day.rpe-mid {
   background: var(--rpe-mid);
+  color: var(--text);
 }
 
 .calendar-day.rpe-high {
   background: var(--rpe-high);
-  color: #1a0d03;
+  color: #150f26;
+}
+
+/* Today's check-in: the form until you check in, then a summary with Edit. */
+.checkin-tile {
+  gap: 0;
+}
+
+.checkin-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.checkin-question {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.checkin-top .rpe-value {
+  font-size: 0.95rem;
+}
+
+.checkin-tile .field {
+  color: #c4b4e8;
+}
+
+.checkin-tile textarea {
+  background: rgb(255 255 255 / 8%);
+  border-color: transparent;
+}
+
+.checkin-tile .rpe-scale {
+  color: #c4b4e8;
+}
+
+.checkin-done {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.rpe-badge {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--rpe);
+  color: #150f26;
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.checkin-done-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.checkin-done-title {
+  margin: 0;
+  font-weight: 800;
+}
+
+.checkin-done-note {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #c4b4e8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checkin-done-note:empty {
+  display: none;
+}
+
+.pill-button {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 12%);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .legend {
@@ -1979,8 +2288,6 @@ input[type="range"] {
   margin: 18px 0 6px;
   font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
   color: var(--text-muted);
 }
 
@@ -2007,10 +2314,10 @@ input[type="range"] {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid var(--border);
-  background: var(--surface-raised);
+  padding: 12px 14px 12px 18px;
+  border-radius: 24px;
+  border: 1px solid rgb(76 184 115 / 25%);
+  background: var(--streak-tile);
   overflow: hidden;
   box-shadow: 0 8px 24px rgb(0 0 0 / 50%);
 }
@@ -2024,7 +2331,7 @@ input[type="range"] {
 
 .rest-progress-fill {
   height: 100%;
-  background: var(--accent);
+  background: var(--streak);
   transition: width 0.25s linear;
 }
 
@@ -2033,11 +2340,9 @@ input[type="range"] {
 }
 
 .rest-label {
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--streak);
 }
 
 .rest-time {
@@ -2058,7 +2363,7 @@ input[type="range"] {
   padding: 0 10px;
   border: none;
   border-radius: 999px;
-  background: var(--surface-muted);
+  background: rgb(255 255 255 / 12%);
   color: var(--text);
   font: inherit;
   font-size: 0.85rem;
@@ -2067,8 +2372,8 @@ input[type="range"] {
 }
 
 .rest-controls .rest-skip {
-  background: var(--accent);
-  color: var(--accent-text);
+  background: var(--streak);
+  color: #0b1a10;
 }
 
 /* Leave room so the timer doesn't cover the end of the page. */

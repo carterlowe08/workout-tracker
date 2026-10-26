@@ -1,5 +1,5 @@
-// Calories page: estimate calories from activity, minutes and bodyweight,
-// and keep a history of entries.
+// Calories page: estimate calories burned from activity, minutes and
+// bodyweight (logged from a sheet), and keep a history of entries.
 (() => {
   const { KEYS } = Store;
   const { el } = UI;
@@ -16,6 +16,7 @@
   const todayTotal = document.getElementById("calories-today");
   const weekTotal = document.getElementById("calories-week");
   const list = document.getElementById("calorie-list");
+  const dialog = document.getElementById("exercise-dialog");
 
   function readMinutes() {
     const minutes = Number(minutesInput.value);
@@ -49,11 +50,15 @@
     const sum = (filtered) => filtered.reduce((total, entry) => total + entry.calories, 0);
     todayTotal.textContent = UI.formatNumber(sum(entries.filter((entry) => entry.date === today)));
     weekTotal.textContent = UI.formatNumber(sum(entries.filter((entry) => entry.date >= weekStart)));
+    // The food diary's "Net today" depends on calories burned, so let it redraw.
+    document.dispatchEvent(new Event("burned-calories-changed"));
   }
 
   function renderList() {
     if (entries.length === 0) {
-      list.replaceChildren(el("li", { class: "empty" }, "Nothing logged yet. Log your first activity above."));
+      list.replaceChildren(
+        el("li", { class: "empty" }, "Nothing logged yet. Tap \u201c+ Log cardio or a workout\u201d to add one."),
+      );
       return;
     }
     list.replaceChildren(
@@ -129,6 +134,7 @@
     updatePreview();
     renderTotals();
     renderList();
+    dialog.close();
     UI.showToast(`Logged ${UI.formatNumber(entry.calories)} kcal`);
   }
 
@@ -151,6 +157,17 @@
     if (readBodyweight() !== null) setError(bodyweightInput, bodyweightError, "");
   });
   form.addEventListener("submit", logEntry);
+  document.getElementById("exercise-open").addEventListener("click", () => {
+    dialog.showModal();
+    minutesInput.focus();
+  });
+  document.getElementById("exercise-dialog-close").addEventListener("click", () => dialog.close());
+  // Clicking the dimmed area outside the sheet closes it.
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) {
+      dialog.close();
+    }
+  });
 
   updatePreview();
   renderTotals();

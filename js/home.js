@@ -1,4 +1,4 @@
-// Home page: today's load, calories and RPE as rings, plus the week's numbers.
+// Home page: today's load, calories, RPE and streak as colored tiles, plus a progress chart.
 (() => {
   const today = UI.todayKey();
   const weekStart = WorkoutLogic.addDays(today, -6);
@@ -13,7 +13,6 @@
   const loadToday = sumForToday(workouts, (workout) => workout.load);
   const caloriesToday = sumForToday(calorieEntries, (entry) => entry.calories);
   const bestLoadDay = WorkoutLogic.bestDayTotal(workouts, (workout) => workout.load);
-  const bestCalorieDay = WorkoutLogic.bestDayTotal(calorieEntries, (entry) => entry.calories);
   const rpeToday = checkIns[today] ? checkIns[today].rpe : null;
   const loadThisWeek = workouts
     .filter((workout) => workout.date >= weekStart)
@@ -25,54 +24,102 @@
     return Math.round(Units.fromPounds(pounds) * scale) / scale;
   };
 
-  // Today's total as a share of the best day, so the ring is full on a record day.
-  const shareOfBest = (value, best) => (best > 0 ? value / best : 0);
-
-  document.getElementById("today-rings").replaceChildren(
-    UI.ring({
-      fraction: shareOfBest(loadToday, bestLoadDay),
-      value: UI.formatNumber(inChosenUnit(loadToday)),
-      unit: Units.current(),
-      label: "Load",
-      caption: bestLoadDay > 0 ? `Best: ${UI.formatNumber(inChosenUnit(bestLoadDay))}` : "No workouts yet",
-      color: "var(--load)",
-      size: "small",
-    }),
-    UI.ring({
-      fraction: shareOfBest(caloriesToday, bestCalorieDay),
-      value: UI.formatNumber(caloriesToday),
-      unit: "kcal",
-      label: "Calories",
-      caption: bestCalorieDay > 0 ? `Best: ${UI.formatNumber(bestCalorieDay)}` : "None logged yet",
-      color: "var(--calories)",
-      size: "small",
-    }),
-    UI.ring({
-      fraction: rpeToday === null ? 0 : rpeToday / 10,
-      value: rpeToday === null ? "–" : String(rpeToday),
-      unit: "/ 10",
-      label: "RPE",
-      caption: rpeToday === null ? "Not checked in" : WorkoutLogic.rpeLabel(rpeToday),
-      color: "var(--rpe)",
-      size: "small",
-    }),
-  );
+  const unit = Units.current();
+  const WEEKS_SHOWN = 12;
 
   document.getElementById("today-date").textContent = new Date().toLocaleDateString(undefined, {
     weekday: "long",
-    month: "long",
+    month: "short",
     day: "numeric",
   });
-  document.getElementById("stat-streak").textContent = WorkoutLogic.currentStreak(
-    Object.keys(checkIns),
+
+  // ----- Load tile: today's load, a bar against the best day, and a 12-week sparkline -----
+  const loadShareOfBest = bestLoadDay > 0 ? Math.min(loadToday / bestLoadDay, 1) : 0;
+  document.getElementById("load-today").textContent = UI.formatNumber(inChosenUnit(loadToday));
+  document.getElementById("load-unit").textContent = unit;
+  document.getElementById("load-bar").style.width = `${Math.round(loadShareOfBest * 100)}%`;
+  const weekText = `${UI.formatNumber(inChosenUnit(loadThisWeek))} ${unit} this week`;
+  document.getElementById("load-caption").textContent =
+    bestLoadDay > 0 ? `${Math.round(loadShareOfBest * 100)}% of your best day · ${weekText}` : "No workouts saved yet";
+
+  // A tiny line of total load per week; hidden until there is something to draw.
+  function drawSparkline(container, values) {
+    if (values.every((value) => value === 0)) {
+      container.replaceChildren();
+      return;
+    }
+    const width = 96;
+    const height = 48;
+    const pad = 4;
+    const highest = Math.max(...values);
+    const points = values.map((value, index) => [
+      pad + (index * (width - pad * 2)) / (values.length - 1),
+      height - pad - (value / highest) * (height - pad * 2),
+    ]);
+    const svgNamespace = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNamespace, "svg");
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", `Total load per week for the last ${values.length} weeks`);
+    const line = document.createElementNS(svgNamespace, "polyline");
+    line.setAttribute("points", points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" "));
+    const [lastX, lastY] = points[points.length - 1];
+    const dot = document.createElementNS(svgNamespace, "circle");
+    dot.setAttribute("cx", lastX.toFixed(1));
+    dot.setAttribute("cy", lastY.toFixed(1));
+    dot.setAttribute("r", "3.5");
+    svg.append(line, dot);
+    container.replaceChildren(svg);
+  }
+
+  const weeklyLoad = WorkoutLogic.weeklyValues(
+    workouts,
     today,
+    WEEKS_SHOWN,
+    (workout) => workout.load,
+    (a, b) => a + b,
+  ).map(({ value }) => value || 0);
+  drawSparkline(document.getElementById("load-sparkline"), weeklyLoad);
+
+  // ----- Calories and RPE tiles -----
+  document.getElementById("calories-today").textContent = UI.formatNumber(caloriesToday);
+  document.getElementById("rpe-today").textContent = rpeToday === null ? "–" : String(rpeToday);
+  document.getElementById("rpe-label").textContent =
+    rpeToday === null ? "Not checked in yet" : WorkoutLogic.rpeLabel(rpeToday);
+  // Ten bars that get taller from left to right; today's RPE fills that many.
+  document.getElementById("rpe-bars").replaceChildren(
+    ...Array.from({ length: 10 }, (_, index) =>
+      UI.el("span", {
+        class: rpeToday !== null && index < rpeToday ? "filled" : "",
+        style: `height: ${10 + index * 3}px`,
+      }),
+    ),
   );
-  document.getElementById("stat-load").textContent = UI.formatNumber(inChosenUnit(loadThisWeek));
-  document.getElementById("stat-load-label").textContent = `Load, last 7 days (${Units.current()})`;
-  document.getElementById("progress-heading").textContent = `Progress, last 12 weeks (${Units.current()})`;
+
+  // ----- Streak tile: the streak, the best one, and a check for each of the last 7 days -----
+  const checkInDays = Object.keys(checkIns);
+  const streak = WorkoutLogic.currentStreak(checkInDays, today);
+  const best = WorkoutLogic.bestStreak(checkInDays);
+  document.getElementById("streak-count").textContent = streak;
+  document.getElementById("streak-best").textContent = best > 0 ? `Best ${best}` : "";
+  const lastSevenDays = Array.from({ length: 7 }, (_, index) => WorkoutLogic.addDays(today, index - 6));
+  document.getElementById("week-dots").replaceChildren(
+    ...lastSevenDays.map((day) => {
+      const [year, month, date] = day.split("-").map(Number);
+      const letters = new Date(year, month - 1, date).toLocaleDateString(undefined, { weekday: "short" }).slice(0, 2);
+      const classes = ["week-dot"];
+      if (checkIns[day]) classes.push("checked");
+      if (day === today) classes.push("today");
+      return UI.el("span", { class: "week-dot-day" }, UI.el("span", { class: classes.join(" ") }), letters);
+    }),
+  );
+  const checkedThisWeek = lastSevenDays.filter((day) => checkIns[day]).length;
+  document.getElementById("week-summary").textContent =
+    `Checked in ${checkedThisWeek} of the last 7 days.${best > 0 ? ` Best streak ${best} days.` : ""}`;
+
+  document.getElementById("progress-heading").textContent = `Progress, last 12 weeks (${unit})`;
 
   // ----- Progress chart: heaviest set per week for one exercise, or total weekly load -----
-  const WEEKS_SHOWN = 12;
   const TOTAL_LOAD = "total-load";
   const metricSelect = document.getElementById("progress-metric");
   const chartContainer = document.getElementById("progress-chart");

@@ -21,56 +21,6 @@ const UI = (() => {
     return node;
   }
 
-  // A circular gauge: the colored arc fills `fraction` (0 to 1) of the ring,
-  // with a big number in the middle and a label and caption underneath.
-  function ring({ fraction, value, unit, label, caption, color, size = "large" }) {
-    const svgNamespace = "http://www.w3.org/2000/svg";
-    const radius = 52;
-    const circumference = 2 * Math.PI * radius;
-    const filled = Math.min(Math.max(fraction, 0), 1);
-
-    const svg = document.createElementNS(svgNamespace, "svg");
-    svg.setAttribute("viewBox", "0 0 120 120");
-    svg.setAttribute("class", "ring-svg");
-    svg.setAttribute("aria-hidden", "true");
-    for (const className of ["ring-track", "ring-progress"]) {
-      const circle = document.createElementNS(svgNamespace, "circle");
-      circle.setAttribute("cx", "60");
-      circle.setAttribute("cy", "60");
-      circle.setAttribute("r", String(radius));
-      circle.setAttribute("class", className);
-      svg.append(circle);
-    }
-    const progress = svg.lastChild;
-    progress.style.stroke = color;
-    progress.style.color = color;
-    progress.style.strokeDasharray = String(circumference);
-    progress.style.strokeDashoffset = String(circumference * (1 - filled));
-    progress.style.opacity = filled > 0 ? "1" : "0";
-
-    return el(
-      "figure",
-      { class: `ring ring-${size}`, role: "img", "aria-label": `${label}: ${value} ${unit}. ${caption || ""}` },
-      el(
-        "div",
-        { class: "ring-dial" },
-        svg,
-        el(
-          "div",
-          { class: "ring-center" },
-          el("span", { class: "ring-value" }, value),
-          el("span", { class: "ring-unit" }, unit),
-        ),
-      ),
-      el(
-        "figcaption",
-        {},
-        el("span", { class: "ring-label" }, label),
-        caption ? el("span", { class: "ring-caption" }, caption) : null,
-      ),
-    );
-  }
-
   function showToast(message, isError = false) {
     let toast = document.getElementById("toast");
     if (!toast) {
@@ -169,5 +119,5 @@ const UI = (() => {
     return WorkoutLogic.toDateKey(new Date());
   }
 
-  return { el, ring, ask, showToast, showSaveError, formatDate, formatNumber, plural, todayKey };
+  return { el, ask, showToast, showSaveError, formatDate, formatNumber, plural, todayKey };
 })();

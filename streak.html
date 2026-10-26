@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Streak &amp; RPE · Workout Tracker</title>
-    <link rel="stylesheet" href="css/styles.css?v=e538402" />
+    <link rel="stylesheet" href="css/styles.css?v=f0934f0" />
   </head>
   <body>
     <nav class="tab-bar" aria-label="Main">
@@ -19,33 +19,57 @@
 
     <main>
       <section class="page-intro">
-        <h1>Streak &amp; RPE</h1>
-        <p>Check in each day you train and rate how hard the session felt.</p>
+        <p id="streak-date"></p>
+        <h1>Streak</h1>
       </section>
 
-      <section class="card" aria-labelledby="streak-heading">
-        <h2 id="streak-heading" class="visually-hidden">Your streak</h2>
-        <div class="stat-grid">
-          <div class="stat">
-            <span class="big-number" id="current-streak">0</span>
-            <span class="stat-label">Day streak</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value" id="best-streak">0</span>
-            <span class="stat-label">Best streak (days)</span>
-          </div>
+      <div class="tile-pair">
+        <section class="tile tile-streak" aria-labelledby="current-streak-label">
+          <p class="tile-number" id="current-streak">0</p>
+          <h2 class="tile-label" id="current-streak-label">Day streak</h2>
+        </section>
+        <section class="tile tile-rpe" aria-labelledby="best-streak-label">
+          <p class="tile-number" id="best-streak">0</p>
+          <h2 class="tile-label" id="best-streak-label">Best streak</h2>
+        </section>
+      </div>
+
+      <section class="card" aria-labelledby="month-heading">
+        <div class="month-nav">
+          <button type="button" class="icon-square" id="month-prev" aria-label="Previous month">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
+          </button>
+          <h2 id="month-heading" aria-live="polite"></h2>
+          <button type="button" class="icon-square" id="month-next" aria-label="Next month">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+          </button>
         </div>
-        <p class="note">Your streak counts days in a row with a check-in. Missing a day resets it.</p>
+        <div class="month-weekdays" aria-hidden="true">
+          <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+        </div>
+        <div class="calendar" id="calendar"></div>
+        <div class="legend">
+          <span style="--swatch: var(--rpe-low)">RPE 1–4</span>
+          <span style="--swatch: var(--rpe-mid)">5–7</span>
+          <span style="--swatch: var(--rpe-high)">8–10</span>
+        </div>
       </section>
 
-      <section class="card" aria-labelledby="checkin-heading">
-        <h2 id="checkin-heading">Today's check-in</h2>
+      <section class="tile tile-rpe checkin-tile" aria-label="Today's check-in">
+        <div class="checkin-done" id="checkin-done" hidden>
+          <span class="rpe-badge" id="done-rpe"></span>
+          <div class="checkin-done-text">
+            <p class="checkin-done-title" id="done-title"></p>
+            <p class="checkin-done-note" id="done-note"></p>
+          </div>
+          <button type="button" class="pill-button" id="checkin-edit">Edit</button>
+        </div>
         <form class="form" id="checkin-form">
-          <label class="field" for="rpe">
-            How hard was today's workout? (RPE)
-          </label>
-          <div>
+          <div class="checkin-top">
+            <label class="checkin-question" for="rpe">How hard was today?</label>
             <span class="rpe-value" id="rpe-output" aria-live="polite"></span>
+          </div>
+          <div>
             <input id="rpe" type="range" min="1" max="10" step="1" value="7" />
             <div class="rpe-scale" aria-hidden="true"><span>1 · very easy</span><span>10 · max effort</span></div>
           </div>
@@ -55,34 +79,22 @@
           </label>
           <div class="button-row">
             <button type="submit" class="button" id="checkin-button">Check in for today</button>
+            <button type="button" class="button-secondary" id="checkin-cancel" hidden>Cancel</button>
           </div>
         </form>
-      </section>
-
-      <section class="card" aria-labelledby="calendar-heading">
-        <div class="card-header">
-          <h2 id="calendar-heading">Last 4 weeks</h2>
-          <span class="muted">Numbers are RPE</span>
-        </div>
-        <div class="calendar" id="calendar"></div>
-        <div class="legend">
-          <span style="--swatch: var(--surface-muted)">Rest</span>
-          <span style="--swatch: var(--rpe-low)">RPE 1–4</span>
-          <span style="--swatch: var(--rpe-mid)">RPE 5–7</span>
-          <span style="--swatch: var(--rpe-high)">RPE 8–10</span>
-        </div>
       </section>
 
       <section class="card" aria-labelledby="checkins-heading">
         <h2 id="checkins-heading">Check-in history</h2>
         <ul class="list" id="checkin-list"></ul>
+        <p class="note">Your streak counts days in a row with a check-in. Missing a day resets it.</p>
       </section>
     </main>
 
-    <script src="js/logic.js?v=e538402"></script>
-    <script src="js/storage.js?v=e538402"></script>
-    <script src="js/ui.js?v=e538402"></script>
-    <script src="js/units.js?v=e538402"></script>
-    <script src="js/streak.js?v=e538402"></script>
+    <script src="js/logic.js?v=f0934f0"></script>
+    <script src="js/storage.js?v=f0934f0"></script>
+    <script src="js/ui.js?v=f0934f0"></script>
+    <script src="js/units.js?v=f0934f0"></script>
+    <script src="js/streak.js?v=f0934f0"></script>
   </body>
 </html>

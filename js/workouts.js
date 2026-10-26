@@ -39,11 +39,10 @@
 
   const nameInput = document.getElementById("workout-name");
   const draftList = document.getElementById("draft-list");
-  const draftRing = document.getElementById("draft-ring");
   const draftSetsDone = document.getElementById("draft-sets-done");
   const draftMinutes = document.getElementById("draft-minutes");
-  const draftCalories = document.getElementById("draft-calories");
-  const draftCaloriesLabel = document.getElementById("draft-calories-label");
+  const draftTotals = document.getElementById("draft-totals");
+  const draftSegments = document.getElementById("draft-segments");
   const saveButton = document.getElementById("save-workout");
   const clearButton = document.getElementById("clear-workout");
   const saveRoutineButton = document.getElementById("save-routine");
@@ -546,7 +545,7 @@
       "button",
       {
         type: "button",
-        class: "button-secondary small",
+        class: "button-secondary small warmup-button",
         "aria-label": `Warm-up for ${exercise.name}`,
         onclick: () => {
           const topSet = Math.max(0, ...exercise.sets.map((set) => set.weight));
@@ -633,7 +632,6 @@
     return { done: allSets.filter((set) => set.done).length, total: allSets.length };
   }
 
-  // The ring compares this workout's load with the best single day so far.
   // Bodyweight from the Calories tab's exercise form, or else the nutrition plan.
   function knownBodyweight() {
     const answers = Store.read(KEYS.planAnswers, null);
@@ -662,32 +660,22 @@
     Store.write(KEYS.calories, [entry, ...entries]);
   }
 
+  // The blue tile at the top: duration, calories and load so far, and one
+  // segment per set that fills in as sets are finished.
   function updateDraftSummary() {
     const load = WorkoutLogic.workoutLoad(draft.exercises);
-    const bestDay = WorkoutLogic.bestDayTotal(savedWorkouts, (workout) => workout.load);
-    let caption = "Finish sets to fill the ring";
-    if (bestDay > 0) {
-      caption = `Best day: ${Units.format(bestDay, { whole: true })}`;
-    } else if (load > 0) {
-      caption = "Your first workout sets the bar";
-    }
-    draftRing.replaceChildren(
-      UI.ring({
-        fraction: bestDay > 0 ? load / bestDay : load > 0 ? 1 : 0,
-        value: UI.formatNumber(Math.round(Units.fromPounds(load))),
-        unit: Units.current(),
-        label: "Load",
-        caption,
-        color: "var(--load)",
-      }),
-    );
-    const sets = countSets();
-    draftSetsDone.textContent = `${sets.done} / ${sets.total}`;
     const minutes = WorkoutLogic.workoutMinutes(draft.exercises, Date.now());
     const bodyweight = knownBodyweight();
-    draftMinutes.textContent = `${minutes} min`;
-    draftCalories.textContent = bodyweight ? UI.formatNumber(caloriesFor(minutes, bodyweight)) : "–";
-    draftCaloriesLabel.textContent = bodyweight ? "Est. calories" : "Est. calories (add your weight in Plan)";
+    // Without a bodyweight there is no estimate; the Plan page asks for it.
+    const calories = bodyweight ? `${UI.formatNumber(caloriesFor(minutes, bodyweight))} kcal` : "– kcal";
+    draftMinutes.textContent = minutes;
+    draftTotals.textContent = `${calories} · ${Units.format(load, { whole: true })}`;
+    const sets = countSets();
+    draftSetsDone.textContent = `${sets.done} of ${UI.plural(sets.total, "set")}`;
+    draftSegments.style.gridTemplateColumns = `repeat(${Math.max(sets.total, 1)}, minmax(0, 1fr))`;
+    draftSegments.replaceChildren(
+      ...allSets().map((set) => el("span", { class: set.done ? "filled" : "" })),
+    );
     const isEmpty = draft.exercises.length === 0;
     saveButton.disabled = isEmpty;
     saveRoutineButton.disabled = isEmpty;
@@ -998,7 +986,7 @@
     return true;
   }
 
-  // History feeds the "Last" column, the best-day ring and the saved list, so redraw them.
+  // History feeds the "Last" column and the saved list, so redraw them.
   function afterHistoryChange() {
     renderSaved();
     renderDraft();

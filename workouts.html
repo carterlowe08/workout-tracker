@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Build Workout · Workout Tracker</title>
-    <link rel="stylesheet" href="css/styles.css?v=e538402" />
+    <link rel="stylesheet" href="css/styles.css?v=f0934f0" />
   </head>
   <body>
     <nav class="tab-bar" aria-label="Main">
@@ -40,22 +40,13 @@
       <div class="workout-layout">
         <section class="card" aria-labelledby="draft-heading">
           <h2 id="draft-heading">Your workout</h2>
-          <div class="draft-summary">
-            <div id="draft-ring"></div>
-            <div class="draft-summary-stats">
-              <div>
-                <span class="stat-value" id="draft-sets-done">0 / 0</span>
-                <span class="stat-label">Sets done</span>
-              </div>
-              <div>
-                <span class="stat-value" id="draft-minutes">0 min</span>
-                <span class="stat-label">Duration</span>
-              </div>
-              <div>
-                <span class="stat-value" id="draft-calories">0</span>
-                <span class="stat-label" id="draft-calories-label">Est. calories</span>
-              </div>
+          <div class="tile tile-load workout-status">
+            <div class="tile-top">
+              <p class="tile-number"><span id="draft-minutes">0</span><span class="tile-unit"> min</span></p>
+              <p class="tile-caption workout-totals" id="draft-totals"></p>
             </div>
+            <div class="set-segments" id="draft-segments" aria-hidden="true"></div>
+            <p class="tile-caption" id="draft-sets-done">0 of 0 sets</p>
           </div>
           <label class="field">
             Workout name (optional)
@@ -113,18 +104,18 @@
       </section>
     </main>
 
-    <script src="js/logic.js?v=e538402"></script>
-    <script src="js/storage.js?v=e538402"></script>
-    <script src="js/ui.js?v=e538402"></script>
-    <script src="js/units.js?v=e538402"></script>
-    <script src="js/exerciseDatabase.js?v=e538402"></script>
-    <script src="js/exercises.js?v=e538402"></script>
-    <script src="js/premadeRoutines.js?v=e538402"></script>
-    <script src="js/restTimer.js?v=e538402"></script>
-    <script src="js/plateCalculator.js?v=e538402"></script>
-    <script src="js/workoutEditor.js?v=e538402"></script>
-    <script src="js/lineChart.js?v=e538402"></script>
-    <script src="js/exerciseHistory.js?v=e538402"></script>
-    <script src="js/workouts.js?v=e538402"></script>
+    <script src="js/logic.js?v=f0934f0"></script>
+    <script src="js/storage.js?v=f0934f0"></script>
+    <script src="js/ui.js?v=f0934f0"></script>
+    <script src="js/units.js?v=f0934f0"></script>
+    <script src="js/exerciseDatabase.js?v=f0934f0"></script>
+    <script src="js/exercises.js?v=f0934f0"></script>
+    <script src="js/premadeRoutines.js?v=f0934f0"></script>
+    <script src="js/restTimer.js?v=f0934f0"></script>
+    <script src="js/plateCalculator.js?v=f0934f0"></script>
+    <script src="js/workoutEditor.js?v=f0934f0"></script>
+    <script src="js/lineChart.js?v=f0934f0"></script>
+    <script src="js/exerciseHistory.js?v=f0934f0"></script>
+    <script src="js/workouts.js?v=f0934f0"></script>
   </body>
 </html>
