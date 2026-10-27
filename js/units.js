@@ -29,6 +29,12 @@ const Units = (() => {
     return `${UI.formatNumber(whole ? Math.round(value) : value)} ${current()}`;
   }
 
+  // How far the ▲▼ arrows on a set's weight box move it: 5 lb, or 2.5 kg
+  // (the smallest pair of kilogram plates).
+  function weightStep(unit = current()) {
+    return unit === "kg" ? 2.5 : 5;
+  }
+
   function addSwitch() {
     const header = document.querySelector(".site-header");
     if (!header) {
@@ -60,5 +66,5 @@ const Units = (() => {
 
   addSwitch();
 
-  return { current, fromPounds, toPounds, format };
+  return { current, fromPounds, toPounds, format, weightStep };
 })();

@@ -372,7 +372,7 @@
       inputmode: "decimal",
       min: "0",
       max: String(isWeight ? Units.fromPounds(max) : max),
-      step: "any",
+      step: isWeight ? String(Units.weightStep()) : "any",
       value: String(isWeight ? Units.fromPounds(set[field]) : set[field]),
       "aria-label": label,
     });

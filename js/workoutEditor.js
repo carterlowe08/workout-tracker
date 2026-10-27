@@ -73,7 +73,7 @@ const WorkoutEditor = (() => {
       type: "number",
       inputmode: "decimal",
       min: "0",
-      step: "any",
+      step: isWeight ? String(Units.weightStep()) : "any",
       value: String(isWeight ? Units.fromPounds(set[field]) : set[field]),
       "aria-label": label,
     });
