@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Calories · Workout Tracker</title>
-    <link rel="stylesheet" href="css/styles.css?v=f0934f0" />
+    <link rel="stylesheet" href="css/styles.css?v=8c1eec2" />
   </head>
   <body>
     <nav class="tab-bar" aria-label="Main">
@@ -44,6 +44,50 @@
         </section>
       </div>
 
+      <section class="card weight-card" aria-labelledby="weight-heading">
+        <button type="button" class="weight-summary" id="weight-toggle" aria-expanded="false" aria-controls="weight-details">
+          <span class="weight-summary-text">
+            <span class="tile-label" id="weight-heading">Weight</span>
+            <span class="tile-number tile-number-small" id="weight-now"></span>
+            <span class="weight-change" id="weight-change"></span>
+          </span>
+          <span class="weight-chevron" aria-hidden="true"></span>
+        </button>
+        <div class="weight-details" id="weight-details" hidden>
+          <div class="chips weight-ranges" role="group" aria-label="Chart range">
+            <button type="button" class="chip" data-days="7" aria-pressed="false">1W</button>
+            <button type="button" class="chip" data-days="30" aria-pressed="true">1M</button>
+            <button type="button" class="chip" data-days="90" aria-pressed="false">3M</button>
+            <button type="button" class="chip" data-days="all" aria-pressed="false">All</button>
+          </div>
+          <div class="weight-chart" id="weight-chart"></div>
+          <ul class="weight-legend" aria-hidden="true">
+            <li><span class="weight-legend-dot"></span>Daily</li>
+            <li><span class="weight-legend-line"></span>7-day average</li>
+            <li id="weight-legend-goal"><span class="weight-legend-goal"></span>Goal</li>
+          </ul>
+          <dl class="weight-stats">
+            <div><dt>Start</dt><dd id="weight-start">–</dd></div>
+            <div><dt>Change</dt><dd id="weight-range-change">–</dd></div>
+            <div><dt>To goal</dt><dd id="weight-to-goal">–</dd></div>
+          </dl>
+          <form class="weight-form" id="weight-form" novalidate>
+            <div class="weight-stepper">
+              <button type="button" class="weight-step" id="weight-minus" aria-label="Down 0.2 lb">−</button>
+              <label class="weight-input-wrap">
+                <span class="visually-hidden">Today's weight in pounds</span>
+                <input id="weight-input" type="number" inputmode="decimal" min="50" max="700" step="0.1" placeholder="–" />
+                <span class="weight-input-unit" aria-hidden="true">lb</span>
+              </label>
+              <button type="button" class="weight-step" id="weight-plus" aria-label="Up 0.2 lb">+</button>
+              <button type="submit" class="weight-log" id="weight-log">Log</button>
+            </div>
+            <span class="field-error" id="weight-error"></span>
+          </form>
+          <p class="note">One weigh-in a day: logging again today replaces it. Your latest weight is used to estimate calories burned.</p>
+        </div>
+      </section>
+
       <section class="card net-card" aria-labelledby="net-heading">
         <div class="net-top">
           <h2 id="net-heading">Net today</h2>
@@ -53,6 +97,27 @@
         <div class="macro-split" id="macro-split" aria-hidden="true"></div>
         <ul class="macro-legend" id="macro-grid"></ul>
         <p class="note" id="goal-note"></p>
+      </section>
+
+      <section class="tile tile-water" aria-labelledby="water-heading">
+        <div class="tile-top">
+          <div>
+            <h2 class="tile-label" id="water-heading">Water</h2>
+            <p class="tile-number tile-number-small"><span id="water-today">0</span> <span class="tile-unit">oz</span></p>
+          </div>
+          <button type="button" class="water-goal-button" id="water-goal-button" aria-label="Change daily water goal">
+            of <span id="water-goal">100</span> oz goal
+          </button>
+        </div>
+        <div class="tile-bar" role="progressbar" aria-labelledby="water-heading" aria-valuemin="0" id="water-progress">
+          <div class="tile-bar-fill" id="water-bar"></div>
+        </div>
+        <div class="water-buttons">
+          <button type="button" class="water-add" data-ounces="8">+8 oz<span>glass</span></button>
+          <button type="button" class="water-add" data-ounces="16">+16 oz<span>bottle</span></button>
+          <button type="button" class="water-add" id="water-custom">+ Custom<span>any amount</span></button>
+        </div>
+        <button type="button" class="water-undo" id="water-undo">Undo last</button>
       </section>
 
       <section aria-labelledby="diary-heading" class="diary">
@@ -84,7 +149,7 @@
             <span class="field-error" id="minutes-error"></span>
           </label>
           <label class="field">
-            Bodyweight (lb)
+            <span>Bodyweight (<span class="weight-unit-label">lb</span>)</span>
             <input id="bodyweight" type="number" inputmode="decimal" min="50" max="700" step="any" placeholder="e.g. 175" />
             <span class="field-error" id="bodyweight-error"></span>
           </label>
@@ -95,6 +160,23 @@
         </div>
       </form>
       <p class="note">Estimates use standard MET values for each activity, so treat them as ballpark numbers.</p>
+    </dialog>
+
+    <dialog class="sheet" id="water-dialog" aria-labelledby="water-dialog-title">
+      <div class="sheet-header">
+        <h2 id="water-dialog-title">Add water</h2>
+        <button type="button" class="sheet-close" id="water-dialog-close" aria-label="Close">×</button>
+      </div>
+      <form class="form" id="water-form" novalidate>
+        <label class="field">
+          <span id="water-amount-label">Ounces</span>
+          <input id="water-amount" type="number" inputmode="numeric" step="1" />
+          <span class="field-error" id="water-amount-error"></span>
+        </label>
+        <div class="button-row">
+          <button type="submit" class="button" id="water-submit">Add</button>
+        </div>
+      </form>
     </dialog>
 
     <dialog class="sheet" id="food-dialog" aria-labelledby="food-dialog-title">
@@ -165,12 +247,14 @@
       </form>
     </dialog>
 
-    <script src="js/logic.js?v=f0934f0"></script>
-    <script src="js/storage.js?v=f0934f0"></script>
-    <script src="js/ui.js?v=f0934f0"></script>
-    <script src="js/units.js?v=f0934f0"></script>
-    <script src="js/calories.js?v=f0934f0"></script>
-    <script src="js/foodSearch.js?v=f0934f0"></script>
-    <script src="js/food.js?v=f0934f0"></script>
+    <script src="js/logic.js?v=8c1eec2"></script>
+    <script src="js/storage.js?v=8c1eec2"></script>
+    <script src="js/ui.js?v=8c1eec2"></script>
+    <script src="js/units.js?v=8c1eec2"></script>
+    <script src="js/calories.js?v=8c1eec2"></script>
+    <script src="js/water.js?v=8c1eec2"></script>
+    <script src="js/weight.js?v=8c1eec2"></script>
+    <script src="js/foodSearch.js?v=8c1eec2"></script>
+    <script src="js/food.js?v=8c1eec2"></script>
   </body>
 </html>

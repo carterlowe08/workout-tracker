@@ -1,8 +1,11 @@
 // Nutrition plan page: a questionnaire suggests daily calories and macros,
 // the user can change any of them, and saving sets the Calories tab's goals.
+// Weights are saved in pounds and typed in the unit chosen at the top.
 (() => {
   const { KEYS } = Store;
   const { el } = UI;
+
+  const unit = Units.current();
 
   const planForm = document.getElementById("plan-form");
   const goalsForm = document.getElementById("goals-form");
@@ -12,12 +15,27 @@
   const goalsError = document.getElementById("goals-error");
 
   // Each answer: its input, the allowed range, and the message when it's out of range.
+  // Weights are typed in the chosen unit, so their range is converted from 50–700 lb.
+  const minWeight = Units.fromPounds(50);
+  const maxWeight = Units.fromPounds(700);
   const answerFields = {
     age: { input: "age", min: 13, max: 100, message: "Enter an age from 13 to 100." },
     heightFeet: { input: "height-feet", min: 3, max: 8, message: "Enter your height in feet and inches." },
     heightInches: { input: "height-inches", min: 0, max: 11, message: "Inches must be 0 to 11." },
-    weightLb: { input: "weight", min: 50, max: 700, message: "Enter a weight from 50 to 700 lb." },
-    goalWeightLb: { input: "goal-weight", min: 50, max: 700, message: "Enter a goal weight from 50 to 700 lb." },
+    weightLb: {
+      input: "weight",
+      min: minWeight,
+      max: maxWeight,
+      isWeight: true,
+      message: `Enter a weight from ${minWeight} to ${maxWeight} ${unit}.`,
+    },
+    goalWeightLb: {
+      input: "goal-weight",
+      min: minWeight,
+      max: maxWeight,
+      isWeight: true,
+      message: `Enter a goal weight from ${minWeight} to ${maxWeight} ${unit}.`,
+    },
   };
   const errorElements = {
     age: "age-error",
@@ -43,6 +61,17 @@
     return valid ? value : null;
   }
 
+  // A typed weight in pounds. An unchanged weight keeps its saved pounds, so
+  // resubmitting in kg doesn't nudge 184 lb to 184.09 lb.
+  function weightInPounds(name, value) {
+    const saved = Store.read(KEYS.planAnswers, null);
+    if (saved && Units.fromPounds(saved[name]) === value) {
+      return saved[name];
+    }
+    // Kilograms convert to pounds with two decimals, so they show back as typed.
+    return Math.round(Units.toPounds(value) * 100) / 100;
+  }
+
   function readAnswers() {
     const answers = {};
     let valid = true;
@@ -50,7 +79,8 @@
       byId(id).textContent = "";
     });
     for (const [name, field] of Object.entries(answerFields)) {
-      answers[name] = readNumber(field.input, field.min, field.max);
+      const value = readNumber(field.input, field.min, field.max);
+      answers[name] = value !== null && field.isWeight ? weightInPounds(name, value) : value;
       if (answers[name] === null) {
         valid = false;
         const errorElement = byId(errorElements[name]);
@@ -69,19 +99,23 @@
 
   function explain(plan, answers) {
     const activity = WorkoutLogic.ACTIVITY_LEVELS[answers.activity];
+    const inKg = unit === "kg";
     const goalSentence = {
-      lose: "To lose about 1 lb a week, the plan is 500 calories less than that.",
-      gain: "To gain about ½ lb a week, the plan is 250 calories more than that.",
-      maintain: "You're within 2 lb of your goal, so the plan keeps you where you are.",
+      lose: `To lose about ${inKg ? "½ kg" : "1 lb"} a week, the plan is 500 calories less than that.`,
+      gain: `To gain about ${inKg ? "¼ kg" : "½ lb"} a week, the plan is 250 calories more than that.`,
+      maintain: `You're within ${inKg ? "1 kg" : "2 lb"} of your goal, so the plan keeps you where you are.`,
     }[plan.direction];
+    const proteinRule = inKg ? "1.8 g per kilogram" : "0.8 g per pound";
     const lines = [
       `At rest your body burns about ${UI.formatNumber(plan.bmr)} calories a day. ` +
         `Being ${activity.label.toLowerCase()} brings that to about ${UI.formatNumber(plan.tdee)}.`,
       goalSentence,
-      "Protein is 0.8 g per pound of your goal weight, fat is 25% of calories, and carbs fill the rest.",
+      `Protein is ${proteinRule} of your goal weight, fat is 25% of calories, and carbs fill the rest.`,
     ];
     if (plan.raisedToMinimum) {
-      lines.push("The plan was raised to a safe minimum, so weight loss may be slower than 1 lb a week.");
+      lines.push(
+        `The plan was raised to a safe minimum, so weight loss may be slower than ${inKg ? "½ kg" : "1 lb"} a week.`,
+      );
     }
     explanation.replaceChildren(
       el("p", { class: "plan-headline" }, "Suggested for you"),
@@ -166,7 +200,7 @@
       return;
     }
     for (const [name, field] of Object.entries(answerFields)) {
-      byId(field.input).value = answers[name];
+      byId(field.input).value = field.isWeight ? Units.fromPounds(answers[name]) : answers[name];
     }
     const sexInput = planForm.querySelector(`input[name="sex"][value="${answers.sex}"]`);
     if (sexInput) {
@@ -175,6 +209,15 @@
     activitySelect.value = answers.activity;
   }
 
+  document.querySelectorAll(".weight-unit-label").forEach((label) => {
+    label.textContent = unit;
+  });
+  for (const field of Object.values(answerFields).filter((answerField) => answerField.isWeight)) {
+    byId(field.input).min = field.min;
+    byId(field.input).max = field.max;
+  }
+  byId("weight").placeholder = `e.g. ${Units.fromPounds(175)}`;
+  byId("goal-weight").placeholder = `e.g. ${Units.fromPounds(165)}`;
   activitySelect.replaceChildren(
     ...Object.entries(WorkoutLogic.ACTIVITY_LEVELS).map(([value, level]) =>
       el("option", { value }, `${level.label}: ${level.description}`),

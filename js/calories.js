@@ -1,8 +1,13 @@
 // Calories page: estimate calories burned from activity, minutes and
 // bodyweight (logged from a sheet), and keep a history of entries.
+// Bodyweight is saved in pounds and typed in the unit chosen at the top.
 (() => {
   const { KEYS } = Store;
   const { el } = UI;
+
+  const unit = Units.current();
+  const MIN_BODYWEIGHT = Units.fromPounds(50);
+  const MAX_BODYWEIGHT = Units.fromPounds(700);
 
   let entries = Store.read(KEYS.calories, []);
 
@@ -23,9 +28,15 @@
     return Number.isInteger(minutes) && minutes >= 1 && minutes <= 600 ? minutes : null;
   }
 
+  // The typed bodyweight in pounds, or null if it's out of range.
   function readBodyweight() {
     const bodyweight = Number(bodyweightInput.value);
-    return bodyweightInput.value !== "" && bodyweight >= 50 && bodyweight <= 700 ? bodyweight : null;
+    const valid = bodyweightInput.value !== "" && bodyweight >= MIN_BODYWEIGHT && bodyweight <= MAX_BODYWEIGHT;
+    return valid ? Units.toPounds(bodyweight) : null;
+  }
+
+  function showBodyweight(pounds) {
+    bodyweightInput.value = Units.fromPounds(pounds);
   }
 
   function setError(input, errorElement, message) {
@@ -113,7 +124,8 @@
     const minutes = readMinutes();
     const bodyweight = readBodyweight();
     setError(minutesInput, minutesError, minutes === null ? "Enter whole minutes from 1 to 600." : "");
-    setError(bodyweightInput, bodyweightError, bodyweight === null ? "Enter a weight from 50 to 700 lb." : "");
+    const bodyweightMessage = `Enter a weight from ${MIN_BODYWEIGHT} to ${MAX_BODYWEIGHT} ${unit}.`;
+    setError(bodyweightInput, bodyweightError, bodyweight === null ? bodyweightMessage : "");
     if (minutes === null || bodyweight === null) {
       return;
     }
@@ -141,9 +153,15 @@
   activitySelect.replaceChildren(
     ...Object.keys(WorkoutLogic.MET_VALUES).map((activity) => el("option", { value: activity }, activity)),
   );
+  document.querySelectorAll(".weight-unit-label").forEach((label) => {
+    label.textContent = unit;
+  });
+  bodyweightInput.min = MIN_BODYWEIGHT;
+  bodyweightInput.max = MAX_BODYWEIGHT;
+  bodyweightInput.placeholder = `e.g. ${Units.fromPounds(175)}`;
   const savedBodyweight = Store.read(KEYS.bodyweight, null);
   if (savedBodyweight !== null) {
-    bodyweightInput.value = savedBodyweight;
+    showBodyweight(savedBodyweight);
   }
 
   [activitySelect, minutesInput, bodyweightInput].forEach((input) =>
@@ -157,6 +175,12 @@
     if (readBodyweight() !== null) setError(bodyweightInput, bodyweightError, "");
   });
   form.addEventListener("submit", logEntry);
+  // A weigh-in from the weight tracker becomes the bodyweight for estimates.
+  document.addEventListener("bodyweight-changed", (event) => {
+    showBodyweight(event.detail);
+    setError(bodyweightInput, bodyweightError, "");
+    updatePreview();
+  });
   document.getElementById("exercise-open").addEventListener("click", () => {
     dialog.showModal();
     minutesInput.focus();

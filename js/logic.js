@@ -409,6 +409,38 @@ const WorkoutLogic = (() => {
     return { heaviest, bestEstimate };
   }
 
+  // Ounces of water logged on one day. Entries look like { date, ounces }.
+  function waterForDay(entries, dateKey) {
+    return entries.reduce((total, entry) => (entry.date === dateKey ? total + entry.ounces : total), 0);
+  }
+
+  // Saves a weigh-in to a log of { date, pounds } kept oldest first. Weighing
+  // in again on the same day replaces that day's weight.
+  function recordWeight(log, dateKey, pounds) {
+    return [...log.filter((entry) => entry.date !== dateKey), { date: dateKey, pounds }].sort((a, b) =>
+      a.date.localeCompare(b.date),
+    );
+  }
+
+  // Average of the weigh-ins in the 7 days ending on dateKey, or null if there are none.
+  function weightAverage(log, dateKey) {
+    const weekStart = addDays(dateKey, -6);
+    const week = log.filter((entry) => entry.date >= weekStart && entry.date <= dateKey);
+    return week.length === 0 ? null : week.reduce((total, entry) => total + entry.pounds, 0) / week.length;
+  }
+
+  // Change from the earliest weigh-in in the week before the latest one, as
+  // { pounds, since }, or null when there is no earlier weigh-in that week.
+  function weeklyWeightChange(log) {
+    const latest = log[log.length - 1];
+    if (!latest) {
+      return null;
+    }
+    const weekStart = addDays(latest.date, -7);
+    const earlier = log.find((entry) => entry.date >= weekStart && entry.date < latest.date);
+    return earlier ? { pounds: latest.pounds - earlier.pounds, since: earlier.date } : null;
+  }
+
   function rpeLabel(rpe) {
     if (rpe <= 2) return "Very easy";
     if (rpe <= 4) return "Easy";
@@ -446,6 +478,10 @@ const WorkoutLogic = (() => {
     macroCalories,
     suggestNutritionPlan,
     rpeLabel,
+    waterForDay,
+    recordWeight,
+    weightAverage,
+    weeklyWeightChange,
   };
 })();
 

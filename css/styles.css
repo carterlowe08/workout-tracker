@@ -20,6 +20,9 @@
   --rpe-tile: #2a2142;
   --streak: #4cb873;
   --streak-tile: #18301f;
+  --water: #4fd1e0;
+  --water-tile: #0f2e33;
+  --weight: #ff8fab;
   --carbs: #2ec4b6;
   --fat: #e879c6;
   --protein: #f7b32b;
@@ -305,6 +308,11 @@ main {
 .tile-streak {
   --tile: var(--streak-tile);
   --tile-accent: var(--streak);
+}
+
+.tile-water {
+  --tile: var(--water-tile);
+  --tile-accent: var(--water);
 }
 
 .stat[class*="tile-"] {
@@ -2432,4 +2440,325 @@ body.rest-timer-open .toast {
   .toast {
     bottom: 24px;
   }
+}
+
+/* Water tracker on the Calories page. */
+
+.water-goal-button {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--tile-accent);
+  background: rgb(255 255 255 / 8%);
+  border: none;
+  border-radius: 999px;
+  padding: 8px 14px;
+  min-height: 36px;
+  cursor: pointer;
+}
+
+.water-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.water-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+  background: rgb(255 255 255 / 10%);
+  border: none;
+  border-radius: 16px;
+  padding: 12px 8px;
+  min-height: 60px;
+  cursor: pointer;
+}
+
+.water-add span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--tile-accent);
+}
+
+.water-add:active {
+  background: rgb(255 255 255 / 18%);
+}
+
+.water-undo {
+  align-self: flex-start;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.water-undo:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Weight tracker on the Calories page: a summary row that expands into a chart. */
+
+.weight-card {
+  --tile-accent: var(--weight);
+  padding: 0;
+}
+
+.weight-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 18px 20px;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.weight-summary:focus-visible {
+  outline: 2px solid var(--weight);
+  outline-offset: -2px;
+}
+
+.weight-summary-text {
+  display: grid;
+  gap: 4px;
+}
+
+.weight-summary .tile-number-small {
+  margin: 0;
+}
+
+.weight-summary .tile-number-small:empty {
+  display: none;
+}
+
+.weight-change {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--weight);
+}
+
+/* A chevron that points down when collapsed and up when expanded. */
+.weight-chevron {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 8%) url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff8fab' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>") center / 18px no-repeat;
+  transition: transform 0.2s ease;
+}
+
+.weight-summary[aria-expanded="true"] .weight-chevron {
+  transform: rotate(180deg);
+}
+
+.weight-details {
+  display: grid;
+  gap: 14px;
+  padding: 0 20px 20px;
+}
+
+.weight-ranges {
+  margin: 0;
+}
+
+.weight-chart {
+  min-height: 170px;
+}
+
+.weight-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.weight-chart-empty {
+  display: grid;
+  place-items: center;
+  height: 170px;
+  margin: 0;
+  border-radius: 16px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 0 24px;
+}
+
+.weight-dot {
+  fill: var(--weight);
+  opacity: 0.45;
+}
+
+.weight-average-line {
+  fill: none;
+  stroke: var(--weight);
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.weight-average-end {
+  fill: var(--weight);
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+.weight-goal-line {
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
+
+.weight-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: -4px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.weight-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.weight-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--weight);
+  opacity: 0.6;
+}
+
+.weight-legend-line {
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--weight);
+}
+
+.weight-legend-goal {
+  width: 16px;
+  border-top: 2px dashed var(--text-muted);
+}
+
+.weight-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.weight-stats div {
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: var(--surface-muted);
+}
+
+.weight-stats dt {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.weight-stats dd {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.weight-stats .weight-toward-goal {
+  color: var(--streak);
+}
+
+.weight-stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 18px;
+  background: var(--surface-muted);
+}
+
+.weight-step,
+.weight-log {
+  flex: none;
+  min-width: 44px;
+  height: 44px;
+  font: inherit;
+  font-weight: 800;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.weight-step {
+  font-size: 1.3rem;
+  color: var(--text);
+  background: var(--surface-raised);
+}
+
+.weight-log {
+  padding: 0 18px;
+  font-size: 0.95rem;
+  color: #2a0d16;
+  background: var(--weight);
+}
+
+.weight-input-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.weight-input-wrap input {
+  padding-right: 32px;
+  font-size: 1.3rem;
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  background: transparent;
+  border-color: transparent;
+}
+
+.weight-input-unit {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.weight-form .field-error:empty {
+  display: none;
+}
+
+.weight-details .note {
+  margin: 0;
 }

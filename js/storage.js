@@ -16,6 +16,9 @@ const Store = (() => {
     weightUnit: "workoutTracker.weightUnit",
     checkIns: "workoutTracker.checkIns",
     bodyweight: "workoutTracker.bodyweightLb",
+    weightLog: "workoutTracker.weightLog",
+    water: "workoutTracker.waterEntries",
+    waterGoal: "workoutTracker.waterGoalOz",
   };
 
   // A missing key means a typo or an outdated copy of this file; fail loudly
