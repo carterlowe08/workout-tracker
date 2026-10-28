@@ -450,6 +450,24 @@ const WorkoutLogic = (() => {
     return "Max effort";
   }
 
+  // One line under each RPE on the end-of-workout scale.
+  const RPE_HINTS = {
+    1: "Barely broke a sweat",
+    2: "Light, like a walk",
+    3: "Lots left in the tank",
+    4: "Warmed up, not pushed",
+    5: "Working, but comfortable",
+    6: "4 or more reps left on sets",
+    7: "About 3 reps left on sets",
+    8: "About 2 reps left on sets",
+    9: "1 rep left on sets",
+    10: "Nothing left, sets to failure",
+  };
+
+  function rpeHint(rpe) {
+    return RPE_HINTS[rpe] || "";
+  }
+
   return {
     MET_VALUES,
     toDateKey,
@@ -478,6 +496,7 @@ const WorkoutLogic = (() => {
     macroCalories,
     suggestNutritionPlan,
     rpeLabel,
+    rpeHint,
     waterForDay,
     recordWeight,
     weightAverage,

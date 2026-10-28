@@ -27,7 +27,13 @@
   }
 
   const storedDraft = Store.read(KEYS.draft, { name: "", exercises: [] });
-  let draft = { name: storedDraft.name, exercises: storedDraft.exercises.map(toPerSetExercise) };
+  // rpeAsked: the end-of-workout RPE sheet has been shown; rpe: the answer, if any.
+  let draft = {
+    name: storedDraft.name,
+    exercises: storedDraft.exercises.map(toPerSetExercise),
+    rpeAsked: Boolean(storedDraft.rpeAsked),
+    rpe: storedDraft.rpe ?? null,
+  };
   let savedWorkouts = Store.read(KEYS.workouts, []);
   let customExercises = Store.read(KEYS.customExercises, []);
   // Routines are saved workouts to reuse: { name, exercises: [{ name, group, sets: [{ weight, reps }] }] }.
@@ -423,7 +429,6 @@
     } else if (state === "active") {
       set.endedAt = now;
       set.done = true;
-      RestTimer.start();
     } else {
       set.done = false;
       delete set.startedAt;
@@ -431,6 +436,37 @@
     }
     saveDraft();
     renderDraft();
+    if (state !== "active") {
+      return;
+    }
+    // Ending the last set finishes the workout, so ask how hard it was instead of resting.
+    if (allSets().every((other) => other.done) && !draft.rpeAsked) {
+      RestTimer.stop();
+      askWorkoutRpe();
+    } else {
+      RestTimer.start();
+    }
+  }
+
+  // Asks for the workout's RPE once per workout and saves it as today's check-in.
+  async function askWorkoutRpe() {
+    draft.rpeAsked = true;
+    saveDraft();
+    const load = WorkoutLogic.workoutLoad(draft.exercises);
+    const minutes = WorkoutLogic.workoutMinutes(draft.exercises, Date.now());
+    const rpe = await RpeCheckIn.ask(
+      `Workout done · ${minutes} min · ${Units.format(load, { whole: true })}`,
+    );
+    if (rpe === null) {
+      return;
+    }
+    if (!RpeCheckIn.saveToday(rpe)) {
+      UI.showSaveError();
+      return;
+    }
+    draft.rpe = rpe;
+    saveDraft();
+    UI.showToast(`RPE ${rpe} saved · streak updated`);
   }
 
   function renderSetRow(exercise, set, setIndex, previousSets) {
@@ -713,6 +749,10 @@
     if (unfinished > 0 && !(await UI.ask(unfinishedMessage, { confirmLabel: "Save anyway" }))) {
       return;
     }
+    // Workouts saved without ending every set haven't been asked for an RPE yet.
+    if (!draft.rpeAsked) {
+      await askWorkoutRpe();
+    }
     // Only finished sets are saved; exercises with none finished are left out.
     const finishedExercises = draft.exercises
       .map((exercise) => ({ ...exercise, sets: exercise.sets.filter((set) => set.done) }))
@@ -725,6 +765,9 @@
       exercises: finishedExercises,
       load: WorkoutLogic.workoutLoad(finishedExercises),
     };
+    if (draft.rpe) {
+      workout.rpe = draft.rpe;
+    }
     // Time covers the whole session, including a set left unfinished.
     workout.minutes = WorkoutLogic.workoutMinutes(draft.exercises, Date.now());
     const bodyweight = knownBodyweight();
@@ -1036,7 +1079,8 @@
               `${UI.formatDate(workout.date)} · ${UI.plural(workout.exercises.length, "exercise")} · ` +
                 `${UI.plural(countSavedSets(workout), "set")} · ${Units.format(workout.load, { whole: true })} load` +
                 (workout.minutes ? ` · ${workout.minutes} min` : "") +
-                (workout.calories ? ` · ~${UI.formatNumber(workout.calories)} cal` : ""),
+                (workout.calories ? ` · ~${UI.formatNumber(workout.calories)} cal` : "") +
+                (workout.rpe ? ` · RPE ${workout.rpe}` : ""),
             ),
             el("span", { class: "row-meta" }, workout.exercises.map((exercise) => exercise.name).join(", ")),
           ),
