@@ -37,10 +37,11 @@
   --rpe-mid: #5b47a0;
   --rpe-high: #a98bff;
   --rpe-none: #5a5a63;
-  /* Muscle map: main muscles, muscles that also work, and the rest of the body. */
-  --muscle-main: var(--load);
-  --muscle-also: #3a5687;
-  --muscle-idle: #3b3b43;
+  /* Muscle map: main muscles, muscles that also work, other muscles, and the dark body. */
+  --muscle-main: #ff4d3d;
+  --muscle-also: #f5a0a0;
+  --muscle-idle: #8e8e96;
+  --muscle-body: #0b0b0d;
   --radius: 24px;
   --tab-bar-height: 72px;
   color-scheme: dark;
@@ -2481,6 +2482,21 @@ input[type="range"] {
 
 .muscle-idle {
   fill: var(--muscle-idle);
+}
+
+/* Each shape drawn dark with a thick outline makes the body; its color shows
+   between the muscles as the lines that separate them. */
+.muscle-body > * {
+  fill: var(--muscle-body);
+  stroke: var(--muscle-body);
+  stroke-width: 7;
+  stroke-linejoin: round;
+}
+
+.muscle {
+  stroke: var(--muscle-body);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
 }
 
 .muscle-names {
