@@ -13,7 +13,7 @@
   const loadToday = sumForToday(workouts, (workout) => workout.load);
   const caloriesToday = sumForToday(calorieEntries, (entry) => entry.calories);
   const bestLoadDay = WorkoutLogic.bestDayTotal(workouts, (workout) => workout.load);
-  const rpeToday = checkIns[today] ? checkIns[today].rpe : null;
+  const rpeToday = checkIns[today]?.rpe ?? null;
   const loadThisWeek = workouts
     .filter((workout) => workout.date >= weekStart)
     .reduce((total, workout) => total + workout.load, 0);
@@ -84,8 +84,13 @@
   // ----- Calories and RPE tiles -----
   document.getElementById("calories-today").textContent = UI.formatNumber(caloriesToday);
   document.getElementById("rpe-today").textContent = rpeToday === null ? "–" : String(rpeToday);
-  document.getElementById("rpe-label").textContent =
-    rpeToday === null ? "Not checked in yet" : WorkoutLogic.rpeLabel(rpeToday);
+  let rpeLabel = "Not checked in yet";
+  if (rpeToday !== null) {
+    rpeLabel = WorkoutLogic.rpeLabel(rpeToday);
+  } else if (checkIns[today]) {
+    rpeLabel = "Checked in, no RPE";
+  }
+  document.getElementById("rpe-label").textContent = rpeLabel;
   // Ten bars that get taller from left to right; today's RPE fills that many.
   document.getElementById("rpe-bars").replaceChildren(
     ...Array.from({ length: 10 }, (_, index) =>

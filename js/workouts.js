@@ -778,6 +778,7 @@
     }
     savedWorkouts = [workout, ...savedWorkouts];
     logWorkoutCalories(workout);
+    const checkedIn = RpeCheckIn.countToday();
     RestTimer.stop();
     draft = { name: "", exercises: [] };
     nameInput.value = "";
@@ -786,7 +787,8 @@
     renderLibrary();
     renderSaved();
     const burned = workout.calories ? ` · ~${UI.formatNumber(workout.calories)} cal burned` : "";
-    UI.showToast(`Workout saved: ${Units.format(workout.load, { whole: true })} load${burned}`);
+    const streak = checkedIn ? " · streak updated" : "";
+    UI.showToast(`Workout saved: ${Units.format(workout.load, { whole: true })} load${burned}${streak}`);
   }
 
   function countRoutineSets(routine) {

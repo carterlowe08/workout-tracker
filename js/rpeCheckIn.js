@@ -79,24 +79,22 @@ const RpeCheckIn = (() => {
   });
 
   // Opens the sheet; resolves to the chosen RPE, or null if skipped.
-  // A check-in already made today starts selected, so a second workout can keep it.
+  // An RPE already given today starts selected, so a second workout can keep it.
   function ask(summary) {
-    const todayCheckIn = Store.read(KEYS.checkIns, {})[UI.todayKey()];
-    subtitle.textContent = todayCheckIn
-      ? `${summary} · Today's RPE so far is ${todayCheckIn.rpe}`
-      : summary;
+    const todayRpe = Store.read(KEYS.checkIns, {})[UI.todayKey()]?.rpe ?? null;
+    subtitle.textContent = todayRpe ? `${summary} · Today's RPE so far is ${todayRpe}` : summary;
     selected = null;
     saveButton.disabled = true;
     saveButton.textContent = "Save RPE";
     for (const row of rows) {
       row.setAttribute("aria-pressed", "false");
     }
-    if (todayCheckIn) {
-      select(todayCheckIn.rpe);
+    if (todayRpe) {
+      select(todayRpe);
     }
     sheet.showModal();
     sheet.scrollTop = 0;
-    (todayCheckIn ? rows[RPES.indexOf(todayCheckIn.rpe)] : rows[0]).focus();
+    (todayRpe ? rows[RPES.indexOf(todayRpe)] : rows[0]).focus();
     return new Promise((resolve) => {
       answerPending = resolve;
     });
@@ -110,5 +108,21 @@ const RpeCheckIn = (() => {
     return Store.write(KEYS.checkIns, { ...checkIns, [today]: { rpe, note } });
   }
 
-  return { ask, saveToday };
+  // A saved workout counts toward the streak even when the RPE was skipped:
+  // checks in for today with no RPE if there's no check-in yet.
+  // Returns true if it made a new check-in.
+  function countToday() {
+    const checkIns = Store.read(KEYS.checkIns, {});
+    const today = UI.todayKey();
+    if (checkIns[today]) {
+      return false;
+    }
+    if (!Store.write(KEYS.checkIns, { ...checkIns, [today]: { rpe: null, note: "" } })) {
+      UI.showSaveError();
+      return false;
+    }
+    return true;
+  }
+
+  return { ask, saveToday, countToday };
 })();

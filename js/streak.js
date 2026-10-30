@@ -5,6 +5,7 @@
   const { el } = UI;
 
   // Check-ins are stored by date: { "2026-10-13": { rpe: 8, note: "..." } }.
+  // rpe is null when a workout was saved but its RPE was skipped.
   let checkIns = Store.read(KEYS.checkIns, {});
 
   const form = document.getElementById("checkin-form");
@@ -29,6 +30,7 @@
   let editing = false;
 
   function rpeClass(rpe) {
+    if (!rpe) return "rpe-none";
     if (rpe <= 4) return "rpe-low";
     if (rpe <= 7) return "rpe-mid";
     return "rpe-high";
@@ -37,6 +39,11 @@
   function updateRpeOutput() {
     const rpe = Number(rpeInput.value);
     rpeOutput.textContent = `${rpe} · ${WorkoutLogic.rpeLabel(rpe)}`;
+  }
+
+  // "RPE 8 (Hard)", or a note that the RPE was skipped.
+  function describeRpe(rpe) {
+    return rpe ? `RPE ${rpe} (${WorkoutLogic.rpeLabel(rpe)})` : "Workout logged, no RPE";
   }
 
   function renderStreak() {
@@ -54,11 +61,12 @@
     form.hidden = showSummary;
     cancelButton.hidden = !todayCheckIn;
     if (todayCheckIn) {
-      document.getElementById("done-rpe").textContent = todayCheckIn.rpe;
+      const { rpe } = todayCheckIn;
+      document.getElementById("done-rpe").textContent = rpe || "–";
       document.getElementById("done-title").textContent =
-        `Checked in today · ${WorkoutLogic.rpeLabel(todayCheckIn.rpe)}`;
+        `Checked in today · ${rpe ? WorkoutLogic.rpeLabel(rpe) : "No RPE yet"}`;
       document.getElementById("done-note").textContent = todayCheckIn.note ? `\u201c${todayCheckIn.note}\u201d` : "";
-      rpeInput.value = todayCheckIn.rpe;
+      rpeInput.value = rpe || 7;
       noteInput.value = todayCheckIn.note;
       checkInButton.textContent = "Update check-in";
     } else {
@@ -83,9 +91,7 @@
       if (checkIn) classes.push(rpeClass(checkIn.rpe));
       if (day === today) classes.push("today");
       if (day > today) classes.push("future");
-      const description = checkIn
-        ? `${UI.formatDate(day)}: RPE ${checkIn.rpe}`
-        : `${UI.formatDate(day)}: no check-in`;
+      const description = `${UI.formatDate(day)}: ${checkIn ? describeRpe(checkIn.rpe) : "no check-in"}`;
       cells.push(
         el("div", { class: classes.join(" "), title: description, "aria-label": description, role: "img" }, String(date)),
       );
@@ -120,7 +126,7 @@
           el(
             "div",
             {},
-            el("span", { class: "row-title" }, `${UI.formatDate(day)} · RPE ${rpe} (${WorkoutLogic.rpeLabel(rpe)})`),
+            el("span", { class: "row-title" }, `${UI.formatDate(day)} · ${describeRpe(rpe)}`),
             note ? el("span", { class: "row-meta" }, note) : null,
           ),
           el(

@@ -36,6 +36,7 @@
   --rpe-low: #2a2142;
   --rpe-mid: #5b47a0;
   --rpe-high: #a98bff;
+  --rpe-none: #5a5a63;
   --radius: 24px;
   --tab-bar-height: 72px;
   color-scheme: dark;
@@ -1766,6 +1767,12 @@ input[type="range"] {
 .calendar-day.rpe-high {
   background: var(--rpe-high);
   color: #150f26;
+}
+
+/* A saved workout whose RPE was skipped still counts toward the streak. */
+.calendar-day.rpe-none {
+  background: var(--rpe-none);
+  color: var(--text);
 }
 
 /* Today's check-in: the form until you check in, then a summary with Edit. */
