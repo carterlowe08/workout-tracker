@@ -557,14 +557,14 @@
     );
   }
 
-  // An exercise's name, tappable to open its history.
+  // An exercise's name, tappable to open its how-to and history.
   function exerciseNameButton(name) {
     return el(
       "button",
       {
         type: "button",
         class: "exercise-name-button",
-        "aria-label": `${name}: see history`,
+        "aria-label": `${name}: how to do it and your history`,
         onclick: () => ExerciseHistory.open(name),
       },
       name,

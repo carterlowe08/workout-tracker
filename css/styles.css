@@ -37,6 +37,10 @@
   --rpe-mid: #5b47a0;
   --rpe-high: #a98bff;
   --rpe-none: #5a5a63;
+  /* Muscle map: main muscles, muscles that also work, and the rest of the body. */
+  --muscle-main: var(--load);
+  --muscle-also: #3a5687;
+  --muscle-idle: #3b3b43;
   --radius: 24px;
   --tab-bar-height: 72px;
   color-scheme: dark;
@@ -2389,6 +2393,137 @@ input[type="range"] {
 
 .history-session:last-child {
   border-bottom: none;
+}
+
+/* Exercise how-to: photos, muscle map and steps at the top of the exercise sheet */
+
+.guide-photos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.guide-photo {
+  margin: 0;
+}
+
+.guide-photo img,
+.guide-photo-missing {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.guide-photo-missing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.guide-photo figcaption {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.muscle-card {
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--surface-muted);
+}
+
+.muscle-figures {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.muscle-figure {
+  flex: 1;
+  max-width: 150px;
+}
+
+.muscle-figure svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.muscle-figure-label {
+  margin: 4px 0 0;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.muscle-main {
+  fill: var(--muscle-main);
+  background: var(--muscle-main);
+}
+
+.muscle-also {
+  fill: var(--muscle-also);
+  background: var(--muscle-also);
+}
+
+.muscle-idle {
+  fill: var(--muscle-idle);
+}
+
+.muscle-names {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.muscle-names p {
+  margin: 2px 0;
+}
+
+.muscle-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 3px;
+}
+
+.guide-steps {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.9rem;
+  color: #d4d4d8;
+}
+
+.guide-steps li {
+  margin-bottom: 6px;
+}
+
+.guide-steps .guide-steps-message {
+  margin-left: -20px;
+  list-style: none;
+}
+
+.guide-none {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.guide-credit {
+  margin-top: 4px;
 }
 
 /* Rest timer */

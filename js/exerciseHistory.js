@@ -1,11 +1,13 @@
-// Exercise history: a sheet showing every saved session of one exercise, the
-// heaviest set, the best estimated one-rep max, and a chart of that estimate
-// over time. Opened by tapping an exercise's name.
+// Exercise sheet, opened by tapping an exercise's name: how to do it (photos,
+// muscles, steps) on top, then every saved session of it, the heaviest set,
+// the best estimated one-rep max, and a chart of that estimate over time.
 const ExerciseHistory = (() => {
   const { el } = UI;
   const MAX_CHART_SESSIONS = 20;
 
   const title = el("h2", { id: "history-title" });
+  const guideHolder = el("div");
+  const historyHeading = el("h3", { class: "history-heading" }, "Your history");
   const subtitle = el("p", { class: "muted editor-meta" });
   const stats = el("div", { class: "stat-grid history-stats" });
   const chartHeading = el("h3", { class: "history-heading" }, "Estimated one-rep max");
@@ -31,6 +33,8 @@ const ExerciseHistory = (() => {
         "×",
       ),
     ),
+    guideHolder,
+    historyHeading,
     subtitle,
     stats,
     chartHeading,
@@ -114,6 +118,7 @@ const ExerciseHistory = (() => {
     const workouts = Store.read(Store.KEYS.workouts, []);
     const sessions = WorkoutLogic.exerciseSessions(workouts, exerciseName);
     title.textContent = exerciseName;
+    guideHolder.replaceChildren(ExerciseGuide.render(exerciseName));
     const hasHistory = sessions.length > 0;
     for (const part of [stats, chartHeading, chart, sessionsHeading, sessionList, formulaNote]) {
       part.hidden = !hasHistory;
@@ -121,7 +126,7 @@ const ExerciseHistory = (() => {
     if (!hasHistory) {
       subtitle.textContent =
         `You haven't saved a workout with ${exerciseName} yet. Its history shows up here once you do.`;
-      dialog.showModal();
+      showSheet();
       return;
     }
     subtitle.textContent = `${UI.plural(sessions.length, "session")} · weights in ${Units.current()}`;
@@ -130,11 +135,17 @@ const ExerciseHistory = (() => {
     chart.hidden = !usesWeight;
     formulaNote.hidden = !usesWeight;
     renderSessions(sessions);
-    dialog.showModal();
+    showSheet();
     // The chart sizes itself to the sheet, so draw it once the sheet is showing.
     if (usesWeight) {
       renderChart(sessions);
     }
+  }
+
+  // Opens at the top, even if the last exercise shown was scrolled down.
+  function showSheet() {
+    dialog.showModal();
+    dialog.scrollTop = 0;
   }
 
   return { open };
