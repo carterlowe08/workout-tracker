@@ -67,13 +67,13 @@ const WorkoutEditor = (() => {
   // ----- Drawing the sheet -----
 
   // Weight is shown and typed in the chosen unit (lb or kg) but kept in pounds.
-  function numberBox(set, field, label) {
+  function numberBox(set, field, label, { dumbbell = false } = {}) {
     const isWeight = field === "weight";
     const input = el("input", {
       type: "number",
       inputmode: "decimal",
       min: "0",
-      step: isWeight ? String(Units.weightStep()) : "any",
+      step: isWeight ? String(Units.weightStep({ dumbbell })) : "any",
       value: String(isWeight ? Units.fromPounds(set[field]) : set[field]),
       "aria-label": label,
     });
@@ -89,13 +89,20 @@ const WorkoutEditor = (() => {
     return input;
   }
 
+  function libraryEquipment(exerciseName) {
+    const libraryEntry = EXERCISE_LIBRARY.find((item) => item.name === exerciseName);
+    return libraryEntry ? libraryEntry.equipment : "";
+  }
+
   function renderSetRow(exercise, set, setIndex) {
     const setName = `${exercise.name} set ${setIndex + 1}`;
     return el(
       "div",
       { class: "history-set-row" },
       el("span", { class: "set-number" }, String(setIndex + 1)),
-      numberBox(set, "weight", `${setName} weight in ${Units.current()}`),
+      numberBox(set, "weight", `${setName} weight in ${Units.current()}`, {
+        dumbbell: WorkoutLogic.usesDumbbells(exercise.name, libraryEquipment(exercise.name)),
+      }),
       numberBox(set, "reps", `${setName} reps`),
       el(
         "button",

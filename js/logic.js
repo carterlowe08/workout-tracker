@@ -368,6 +368,12 @@ const WorkoutLogic = (() => {
     return steps;
   }
 
+  // Whether an exercise is done with dumbbells: listed with Dumbbell equipment,
+  // or a custom exercise with "dumbbell" in its name.
+  function usesDumbbells(exerciseName, equipment) {
+    return equipment === "Dumbbell" || /\bdumbbells?\b/i.test(exerciseName);
+  }
+
   // Estimated one-rep max with the Epley formula: weight x (1 + reps / 30).
   // A single rep is its own max. 185 lb x 8 reps -> about 234 lb.
   function estimatedOneRepMax(weight, reps) {
@@ -486,6 +492,7 @@ const WorkoutLogic = (() => {
     PLATE_SIZES_KG,
     platesPerSide,
     warmupSteps,
+    usesDumbbells,
     estimatedOneRepMax,
     exerciseSessions,
     bestSets,

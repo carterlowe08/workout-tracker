@@ -29,10 +29,14 @@ const Units = (() => {
     return `${UI.formatNumber(whole ? Math.round(value) : value)} ${current()}`;
   }
 
-  // How far the ▲▼ arrows on a set's weight box move it: 5 lb, or 2.5 kg
-  // (the smallest pair of kilogram plates).
-  function weightStep(unit = current()) {
-    return unit === "kg" ? 2.5 : 5;
+  // How far the ▲▼ arrows on a set's weight box move it: 5 lb (2.5 lb for
+  // dumbbells, which most gyms rack in 2.5 lb jumps), or 2.5 kg (the smallest
+  // pair of kilogram plates).
+  function weightStep({ dumbbell = false } = {}, unit = current()) {
+    if (unit === "kg") {
+      return 2.5;
+    }
+    return dumbbell ? 2.5 : 5;
   }
 
   function addSwitch() {

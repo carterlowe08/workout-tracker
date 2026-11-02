@@ -371,14 +371,14 @@
   // Typing in a number box updates the draft and the totals without
   // re-drawing the list, so the cursor stays where it is.
   // Weights are typed in the chosen unit (lb or kg) and saved in pounds.
-  function setInput(set, field, max, label) {
+  function setInput(set, field, max, label, { dumbbell = false } = {}) {
     const isWeight = field === "weight";
     const input = el("input", {
       type: "number",
       inputmode: "decimal",
       min: "0",
       max: String(isWeight ? Units.fromPounds(max) : max),
-      step: isWeight ? String(Units.weightStep()) : "any",
+      step: isWeight ? String(Units.weightStep({ dumbbell })) : "any",
       value: String(isWeight ? Units.fromPounds(set[field]) : set[field]),
       "aria-label": label,
     });
@@ -497,12 +497,19 @@
         },
         previous ? `${UI.formatNumber(Units.fromPounds(previous.weight))}×${previous.reps}` : "—",
       ),
-      setInput(set, "weight", MAX_WEIGHT_LB, `${setName} weight in ${Units.current()}`),
+      setInput(set, "weight", MAX_WEIGHT_LB, `${setName} weight in ${Units.current()}`, {
+        dumbbell: isDumbbellExercise(exercise.name),
+      }),
       setInput(set, "reps", MAX_REPS, `${setName} reps`),
       platesButton(exercise, set, setName),
       stepButton,
     );
     return row;
+  }
+
+  function isDumbbellExercise(exerciseName) {
+    const libraryEntry = EXERCISE_LIBRARY.find((item) => item.name === exerciseName);
+    return WorkoutLogic.usesDumbbells(exerciseName, libraryEntry ? libraryEntry.equipment : "");
   }
 
   // Which bar the plates button opens with, or null for exercises without a bar.
