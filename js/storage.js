@@ -20,6 +20,7 @@ const Store = (() => {
     weightLog: "workoutTracker.weightLog",
     water: "workoutTracker.waterEntries",
     waterGoal: "workoutTracker.waterGoalOz",
+    goals: "workoutTracker.goals",
   };
 
   // A missing key means a typo or an outdated copy of this file; fail loudly

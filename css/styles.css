@@ -3059,3 +3059,342 @@ body.rest-timer-open .toast {
 .weight-details .note {
   margin: 0;
 }
+
+/* Goals card (Home and Streak) and the New goal sheet */
+
+.goal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.goal-item {
+  border-radius: 16px;
+  background: var(--surface-muted);
+  overflow: hidden;
+}
+
+.goal-toggle {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.goal-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.goal-name {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.goal-summary,
+.goal-more {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.goal-more {
+  font-weight: 600;
+}
+
+.goal-badge {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--surface-raised);
+}
+
+.goal-on-track,
+.goal-ahead,
+.goal-reached {
+  background: var(--streak-tile);
+  color: var(--streak);
+}
+
+.goal-behind {
+  background: var(--calories-tile);
+  color: var(--calories);
+}
+
+.goal-missed {
+  color: var(--text-muted);
+}
+
+.goal-bar {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-raised);
+  overflow: hidden;
+}
+
+.goal-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--load);
+}
+
+.goal-details {
+  display: grid;
+  gap: 10px;
+  padding: 0 14px 14px;
+}
+
+.goal-details p {
+  margin: 0;
+}
+
+.goal-aim {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.goal-path-text {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.goal-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.goal-path {
+  stroke: var(--text-muted);
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+}
+
+.goal-today {
+  stroke: var(--surface-raised);
+  stroke-width: 1.5;
+}
+
+.goal-actual {
+  fill: none;
+  stroke: var(--load);
+  stroke-width: 2.5;
+}
+
+.goal-dot {
+  fill: var(--load);
+}
+
+.goal-should-be {
+  fill: var(--surface-muted);
+  stroke: var(--text);
+  stroke-width: 2;
+}
+
+.goal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.goal-legend span::before {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.goal-legend-path::before {
+  border-top: 2px dashed var(--text-muted);
+}
+
+.goal-legend-actual::before {
+  border-top: 3px solid var(--load);
+}
+
+.goal-legend .goal-legend-now::before {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--text);
+  border-radius: 50%;
+}
+
+.goal-reasons {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--calories-tile);
+}
+
+.goal-reasons h3 {
+  margin: 0 0 2px;
+  font-size: 0.95rem;
+  color: var(--calories);
+}
+
+.goal-reasons ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.goal-update {
+  display: grid;
+  gap: 8px;
+}
+
+.unit-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.unit-input span {
+  min-width: 32px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.goal-delete {
+  justify-self: start;
+  padding-left: 0;
+}
+
+.goal-sheet .sheet-header span {
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.goal-sheet h2 {
+  margin: 4px 0 14px;
+  font-size: 1.3rem;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+}
+
+.goal-step-dots {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.goal-step-dots span {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--surface-raised);
+}
+
+.goal-step-dots span.on {
+  background: var(--load);
+}
+
+.goal-step-label {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.goal-step-body {
+  display: grid;
+  gap: 10px;
+}
+
+.goal-step-body .field-error {
+  margin: 0;
+}
+
+.goal-step-body .field-error:empty {
+  display: none;
+}
+
+.goal-step-body .field-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.goal-pick-list {
+  display: grid;
+  gap: 6px;
+}
+
+.goal-pick {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.goal-pick small {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.goal-pick[aria-checked="true"] {
+  border-color: var(--load);
+  background: var(--load-tile);
+}
+
+.goal-pick-own {
+  border-style: dashed;
+}
+
+.goal-picked {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--load-tile);
+  font-weight: 700;
+}
+
+.goal-preview {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--load-tile);
+}
+
+.goal-preview p {
+  margin: 0;
+}
+
+.goal-warning {
+  color: var(--calories);
+  font-size: 0.85rem;
+}
+
+.goal-sheet-buttons .button {
+  flex: 1;
+}

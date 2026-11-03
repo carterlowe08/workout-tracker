@@ -924,12 +924,7 @@
   }
 
   async function saveRoutine() {
-    const name = draft.name.trim();
-    if (!name) {
-      UI.showToast("Type a workout name first. That becomes the routine's name.", true);
-      nameInput.focus();
-      return;
-    }
+    const name = draft.name.trim() || `Workout on ${UI.formatDate(UI.todayKey())}`;
     const existing = routines.find((routine) => routine.name.toLowerCase() === name.toLowerCase());
     const replaceQuestion = `Replace your "${existing?.name}" routine with this workout?`;
     if (existing && !(await UI.ask(replaceQuestion, { confirmLabel: "Replace" }))) {
