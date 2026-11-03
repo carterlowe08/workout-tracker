@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Streak &amp; RPE · Workout Tracker</title>
-    <link rel="stylesheet" href="css/styles.css?v=72c4235" />
+    <link rel="stylesheet" href="css/styles.css?v=39d0dfc" />
   </head>
   <body>
     <nav class="tab-bar" aria-label="Main">
@@ -25,14 +25,36 @@
 
       <div class="tile-pair">
         <section class="tile tile-streak" aria-labelledby="current-streak-label">
-          <p class="tile-number" id="current-streak">0</p>
-          <h2 class="tile-label" id="current-streak-label">Day streak</h2>
+          <div>
+            <p class="tile-number" id="current-streak">0</p>
+            <h2 class="tile-label" id="current-streak-label">Week streak</h2>
+          </div>
+          <p class="day-streak-note"><span id="day-streak">0</span>-day streak</p>
         </section>
         <section class="tile tile-rpe" aria-labelledby="best-streak-label">
-          <p class="tile-number" id="best-streak">0</p>
-          <h2 class="tile-label" id="best-streak-label">Best streak</h2>
+          <div>
+            <p class="tile-number" id="best-streak">0</p>
+            <h2 class="tile-label" id="best-streak-label">Best (weeks)</h2>
+          </div>
         </section>
       </div>
+
+      <section class="tile tile-streak" aria-labelledby="this-week-label">
+        <div class="this-week-top">
+          <h2 class="tile-label" id="this-week-label">This week</h2>
+          <span class="this-week-progress" id="week-progress"></span>
+        </div>
+        <div class="week-dots" id="week-dots"></div>
+        <p class="week-hint" id="week-hint"></p>
+        <div class="week-goal">
+          <span class="week-goal-label" id="week-goal-label">Goal</span>
+          <div class="goal-stepper" role="group" aria-labelledby="week-goal-label">
+            <button type="button" class="icon-square" id="goal-down" aria-label="Fewer days a week">−</button>
+            <span class="goal-stepper-value" aria-live="polite"><strong id="week-goal">4</strong> <span id="week-goal-unit">days a week</span></span>
+            <button type="button" class="icon-square" id="goal-up" aria-label="More days a week">+</button>
+          </div>
+        </div>
+      </section>
 
       <section class="card" aria-labelledby="month-heading">
         <div class="month-nav">
@@ -45,7 +67,7 @@
           </button>
         </div>
         <div class="month-weekdays" aria-hidden="true">
-          <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+          <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
         </div>
         <div class="calendar" id="calendar"></div>
         <div class="legend">
@@ -88,14 +110,14 @@
       <section class="card" aria-labelledby="checkins-heading">
         <h2 id="checkins-heading">Check-in history</h2>
         <ul class="list" id="checkin-list"></ul>
-        <p class="note">Your streak counts days in a row with a check-in. Missing a day resets it.</p>
+        <p class="note">Your streak counts weeks (Sunday to Saturday) in a row that hit your goal. This week counts once you check in; a week that ends under the goal resets it.</p>
       </section>
     </main>
 
-    <script src="js/logic.js?v=72c4235"></script>
-    <script src="js/storage.js?v=72c4235"></script>
-    <script src="js/ui.js?v=72c4235"></script>
-    <script src="js/units.js?v=72c4235"></script>
-    <script src="js/streak.js?v=72c4235"></script>
+    <script src="js/logic.js?v=39d0dfc"></script>
+    <script src="js/storage.js?v=39d0dfc"></script>
+    <script src="js/ui.js?v=39d0dfc"></script>
+    <script src="js/units.js?v=39d0dfc"></script>
+    <script src="js/streak.js?v=39d0dfc"></script>
   </body>
 </html>

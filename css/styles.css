@@ -504,6 +504,71 @@ a.tile:focus-visible {
   background: var(--tile-accent) url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230b1a10' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'><path d='m5 12 5 5 9-10'/></svg>") center / 14px no-repeat;
 }
 
+.week-dot.future {
+  opacity: 0.45;
+}
+
+/* Weekly streak: the day streak in small text, this week's dots, and the goal. */
+.day-streak-note {
+  display: block;
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--tile-accent);
+}
+
+.this-week-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.this-week-progress {
+  font-weight: 800;
+}
+
+.week-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--tile-accent);
+}
+
+.week-goal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+.week-goal-label {
+  font-weight: 800;
+}
+
+.goal-stepper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.goal-stepper .icon-square {
+  font: inherit;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.goal-stepper-value {
+  font-weight: 700;
+}
+
+.goal-stepper-value strong {
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
 .home-intro h1 {
   font-size: 1.9rem;
 }

@@ -15,6 +15,7 @@ const Store = (() => {
     barWeights: "workoutTracker.barWeights",
     weightUnit: "workoutTracker.weightUnit",
     checkIns: "workoutTracker.checkIns",
+    weekGoal: "workoutTracker.weekGoalDays",
     bodyweight: "workoutTracker.bodyweightLb",
     weightLog: "workoutTracker.weightLog",
     water: "workoutTracker.waterEntries",

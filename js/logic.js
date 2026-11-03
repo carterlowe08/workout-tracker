@@ -146,6 +146,94 @@ const WorkoutLogic = (() => {
     return best;
   }
 
+  // ----- Weekly streak: weeks (Sunday to Saturday) in a row that hit a goal -----
+
+  const DEFAULT_WEEK_GOAL = 4;
+
+  // A goal is a whole number of days a week, 1 to 7; anything else falls back to 4.
+  function clampWeekGoal(goal) {
+    const number = Math.round(Number(goal));
+    if (!Number.isFinite(number)) return DEFAULT_WEEK_GOAL;
+    return Math.min(7, Math.max(1, number));
+  }
+
+  // Check-in days counted per week, keyed by each week's Sunday. Days after
+  // `todayKey` are ignored.
+  function checkInsByWeek(dateKeys, todayKey) {
+    const counts = new Map();
+    new Set(dateKeys).forEach((day) => {
+      if (day > todayKey) return;
+      const week = startOfWeek(day);
+      counts.set(week, (counts.get(week) || 0) + 1);
+    });
+    return counts;
+  }
+
+  // Whether a week keeps the streak going. This week counts as soon as it has
+  // one check-in, even before it reaches the goal; a finished week below the
+  // goal breaks the streak.
+  function weekCounts(count, isThisWeek, goal) {
+    return isThisWeek ? count >= 1 : count >= goal;
+  }
+
+  // Weeks in a row that kept the streak going, ending with this week. A week
+  // with no check-ins yet doesn't break the streak, the same way the day
+  // streak doesn't reset at midnight.
+  function currentWeekStreak(dateKeys, todayKey, goal) {
+    const counts = checkInsByWeek(dateKeys, todayKey);
+    const thisWeek = startOfWeek(todayKey);
+    let streak = weekCounts(counts.get(thisWeek) || 0, true, goal) ? 1 : 0;
+    let week = addDays(thisWeek, -7);
+    while (weekCounts(counts.get(week) || 0, false, goal)) {
+      streak += 1;
+      week = addDays(week, -7);
+    }
+    return streak;
+  }
+
+  function bestWeekStreak(dateKeys, todayKey, goal) {
+    const counts = checkInsByWeek(dateKeys, todayKey);
+    if (counts.size === 0) return 0;
+    const thisWeek = startOfWeek(todayKey);
+    let best = 0;
+    let run = 0;
+    for (let week = [...counts.keys()].sort()[0]; week <= thisWeek; week = addDays(week, 7)) {
+      run = weekCounts(counts.get(week) || 0, week === thisWeek, goal) ? run + 1 : 0;
+      best = Math.max(best, run);
+    }
+    return best;
+  }
+
+  // The last `weekCount` weeks, oldest first: { week (its Sunday), count,
+  // metGoal, isThisWeek }.
+  function recentWeeks(dateKeys, todayKey, weekCount, goal) {
+    const counts = checkInsByWeek(dateKeys, todayKey);
+    const thisWeek = startOfWeek(todayKey);
+    return Array.from({ length: weekCount }, (_, index) => {
+      const week = addDays(thisWeek, (index - weekCount + 1) * 7);
+      const count = counts.get(week) || 0;
+      return { week, count, metGoal: count >= goal, isThisWeek: week === thisWeek };
+    });
+  }
+
+  // The seven date keys of the week containing `todayKey`, Sunday first.
+  function weekDays(todayKey) {
+    const sunday = startOfWeek(todayKey);
+    return Array.from({ length: 7 }, (_, weekday) => addDays(sunday, weekday));
+  }
+
+  // One line on what's left to do this week.
+  function weekGoalHint(thisWeekCount, goal, weekStreak) {
+    if (thisWeekCount >= goal) return "Goal hit this week. Nice work.";
+    const daysLeft = goal - thisWeekCount;
+    if (thisWeekCount === 0) {
+      return weekStreak > 0
+        ? `Check in ${daysLeft} ${daysLeft === 1 ? "day" : "days"} this week to keep your streak.`
+        : "Check in once to start a streak.";
+    }
+    return `${daysLeft} more ${daysLeft === 1 ? "day" : "days"} by Saturday to keep your streak.`;
+  }
+
   // Words in an exercise name that hint at its muscle group.
   const MUSCLE_GROUP_KEYWORDS = {
     Legs: [
@@ -487,6 +575,14 @@ const WorkoutLogic = (() => {
     estimateCalories,
     currentStreak,
     bestStreak,
+    DEFAULT_WEEK_GOAL,
+    clampWeekGoal,
+    checkInsByWeek,
+    currentWeekStreak,
+    bestWeekStreak,
+    recentWeeks,
+    weekDays,
+    weekGoalHint,
     guessMuscleGroup,
     PLATE_SIZES,
     PLATE_SIZES_KG,

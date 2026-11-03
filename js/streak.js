@@ -1,5 +1,6 @@
-// Streak & RPE page: one check-in per day with an RPE rating, a running
-// streak, and a month calendar shaded by RPE.
+// Streak & RPE page: one check-in per day with an RPE rating, a weekly
+// streak toward a goal of days a week (with the day streak beside it), and a
+// month calendar shaded by RPE.
 (() => {
   const { KEYS } = Store;
   const { el } = UI;
@@ -7,6 +8,7 @@
   // Check-ins are stored by date: { "2026-10-13": { rpe: 8, note: "..." } }.
   // rpe is null when a workout was saved but its RPE was skipped.
   let checkIns = Store.read(KEYS.checkIns, {});
+  let weekGoal = WorkoutLogic.clampWeekGoal(Store.read(KEYS.weekGoal, WorkoutLogic.DEFAULT_WEEK_GOAL));
 
   const form = document.getElementById("checkin-form");
   const rpeInput = document.getElementById("rpe");
@@ -15,6 +17,9 @@
   const checkInButton = document.getElementById("checkin-button");
   const currentStreak = document.getElementById("current-streak");
   const bestStreak = document.getElementById("best-streak");
+  const dayStreak = document.getElementById("day-streak");
+  const goalDownButton = document.getElementById("goal-down");
+  const goalUpButton = document.getElementById("goal-up");
   const calendar = document.getElementById("calendar");
   const monthHeading = document.getElementById("month-heading");
   const nextMonthButton = document.getElementById("month-next");
@@ -47,10 +52,50 @@
   }
 
   function renderStreak() {
+    const today = UI.todayKey();
     const days = Object.keys(checkIns);
-    const streak = WorkoutLogic.currentStreak(days, UI.todayKey());
-    currentStreak.textContent = streak;
-    bestStreak.textContent = WorkoutLogic.bestStreak(days);
+    const weekStreak = WorkoutLogic.currentWeekStreak(days, today, weekGoal);
+    currentStreak.textContent = weekStreak;
+    bestStreak.textContent = WorkoutLogic.bestWeekStreak(days, today, weekGoal);
+    dayStreak.textContent = WorkoutLogic.currentStreak(days, today);
+
+    const thisWeek = WorkoutLogic.weekDays(today);
+    const thisWeekCount = thisWeek.filter((day) => checkIns[day]).length;
+    document.getElementById("week-progress").textContent = `${thisWeekCount} of ${weekGoal} days`;
+    document.getElementById("week-hint").textContent = WorkoutLogic.weekGoalHint(thisWeekCount, weekGoal, weekStreak);
+    document.getElementById("week-dots").replaceChildren(
+      ...thisWeek.map((day) => {
+        const classes = ["week-dot"];
+        if (checkIns[day]) classes.push("checked");
+        if (day === today) classes.push("today");
+        if (day > today) classes.push("future");
+        const [year, month, date] = day.split("-").map(Number);
+        const letter = new Date(year, month - 1, date).toLocaleDateString(undefined, { weekday: "narrow" });
+        const description = `${UI.formatDate(day)}: ${checkIns[day] ? "checked in" : "no check-in"}`;
+        return el(
+          "div",
+          { class: "week-dot-day" },
+          letter,
+          el("span", { class: classes.join(" "), role: "img", "aria-label": description }),
+        );
+      }),
+    );
+
+    document.getElementById("week-goal").textContent = weekGoal;
+    document.getElementById("week-goal-unit").textContent = weekGoal === 1 ? "day a week" : "days a week";
+    goalDownButton.disabled = weekGoal <= 1;
+    goalUpButton.disabled = weekGoal >= 7;
+  }
+
+  function changeWeekGoal(step) {
+    const goal = WorkoutLogic.clampWeekGoal(weekGoal + step);
+    if (goal === weekGoal) return;
+    if (!Store.write(KEYS.weekGoal, goal)) {
+      UI.showSaveError();
+      return;
+    }
+    weekGoal = goal;
+    renderStreak();
   }
 
   // Before today's check-in the purple row is the form; after it, a summary with Edit.
@@ -81,8 +126,8 @@
     const daysInMonth = new Date(shownYear, shownMonth, 0).getDate();
     monthHeading.textContent = first.toLocaleDateString(undefined, { month: "long", year: "numeric" });
     nextMonthButton.disabled = shownYear === thisYear && shownMonth === thisMonth;
-    // Monday-first grid: blank cells before the 1st.
-    const blanks = (first.getDay() + 6) % 7;
+    // Sunday-first grid, like the weeks the streak counts: blank cells before the 1st.
+    const blanks = first.getDay();
     const cells = Array.from({ length: blanks }, () => el("div", { class: "calendar-day blank", "aria-hidden": "true" }));
     for (let date = 1; date <= daysInMonth; date += 1) {
       const day = `${shownYear}-${String(shownMonth).padStart(2, "0")}-${String(date).padStart(2, "0")}`;
@@ -205,6 +250,8 @@
     editing = false;
     renderForm();
   });
+  goalDownButton.addEventListener("click", () => changeWeekGoal(-1));
+  goalUpButton.addEventListener("click", () => changeWeekGoal(1));
   document.getElementById("month-prev").addEventListener("click", () => showMonth(-1));
   nextMonthButton.addEventListener("click", () => showMonth(1));
   document.getElementById("streak-date").textContent = new Date().toLocaleDateString(undefined, {

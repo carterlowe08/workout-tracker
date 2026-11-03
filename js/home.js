@@ -101,26 +101,28 @@
     ),
   );
 
-  // ----- Streak tile: the streak, the best one, and a check for each of the last 7 days -----
+  // ----- Streak tile: the weekly streak, the day streak, the best, and this week's check-ins -----
   const checkInDays = Object.keys(checkIns);
-  const streak = WorkoutLogic.currentStreak(checkInDays, today);
-  const best = WorkoutLogic.bestStreak(checkInDays);
-  document.getElementById("streak-count").textContent = streak;
-  document.getElementById("streak-best").textContent = best > 0 ? `Best ${best}` : "";
-  const lastSevenDays = Array.from({ length: 7 }, (_, index) => WorkoutLogic.addDays(today, index - 6));
+  const weekGoal = WorkoutLogic.clampWeekGoal(Store.read(Store.KEYS.weekGoal, WorkoutLogic.DEFAULT_WEEK_GOAL));
+  const best = WorkoutLogic.bestWeekStreak(checkInDays, today, weekGoal);
+  document.getElementById("streak-count").textContent = WorkoutLogic.currentWeekStreak(checkInDays, today, weekGoal);
+  document.getElementById("day-streak-count").textContent = WorkoutLogic.currentStreak(checkInDays, today);
+  document.getElementById("streak-best").textContent = best > 0 ? `Best ${best} wk` : "";
+  const thisWeek = WorkoutLogic.weekDays(today);
   document.getElementById("week-dots").replaceChildren(
-    ...lastSevenDays.map((day) => {
+    ...thisWeek.map((day) => {
       const [year, month, date] = day.split("-").map(Number);
       const letters = new Date(year, month - 1, date).toLocaleDateString(undefined, { weekday: "short" }).slice(0, 2);
       const classes = ["week-dot"];
       if (checkIns[day]) classes.push("checked");
       if (day === today) classes.push("today");
+      if (day > today) classes.push("future");
       return UI.el("span", { class: "week-dot-day" }, UI.el("span", { class: classes.join(" ") }), letters);
     }),
   );
-  const checkedThisWeek = lastSevenDays.filter((day) => checkIns[day]).length;
+  const checkedThisWeek = thisWeek.filter((day) => checkIns[day]).length;
   document.getElementById("week-summary").textContent =
-    `Checked in ${checkedThisWeek} of the last 7 days.${best > 0 ? ` Best streak ${best} days.` : ""}`;
+    `Checked in ${checkedThisWeek} of ${weekGoal} days this week.${best > 0 ? ` Best streak ${UI.plural(best, "week")}.` : ""}`;
 
   document.getElementById("progress-heading").textContent = `Progress, last 12 weeks (${unit})`;
 
