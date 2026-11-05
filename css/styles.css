@@ -862,11 +862,69 @@ input[aria-invalid="true"] {
   color: #ffc9a0;
 }
 
-.exercise-card-header {
+/* An exercise's note: a button with a yellow dot that opens the note below it. */
+.note-button {
+  display: block;
+  min-height: 36px;
+  margin-top: 8px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.note-button::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--protein);
+}
+
+.exercise-note {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--surface-raised);
+}
+
+.exercise-note p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* Name and link button, then progress, then actions, then any note button. */
+.exercise-card-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 4px;
   margin-bottom: 8px;
+}
+
+.exercise-card-header .exercise-name-line,
+.exercise-card-header .note-button,
+.exercise-card-header > .row-meta,
+.exercise-card-header > .row-actions {
+  grid-column: 1 / -1;
+}
+
+.exercise-card-header .note-button {
+  justify-self: start;
+  margin-top: 0;
 }
 
 .set-row {
@@ -2343,6 +2401,30 @@ input[type="range"] {
   color: #fff;
 }
 
+/* End-of-workout note sheet: one exercise at a time. */
+.sheet.note-sheet h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+}
+
+.note-sheet-step {
+  margin: 0 0 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.note-sheet textarea {
+  display: block;
+  width: 100%;
+  min-height: 80px;
+  margin: 10px 0 14px;
+  box-sizing: border-box;
+}
+
 /* End-of-workout RPE sheet: 10 at the top down to 1, each with a description. */
 
 .rpe-sheet {
@@ -2607,101 +2689,366 @@ input[type="range"] {
   margin-top: 4px;
 }
 
-/* Rest timer */
-
-.rest-timer {
-  position: fixed;
-  left: 12px;
-  right: 12px;
-  bottom: calc(var(--tab-bar-height) + 10px);
-  z-index: 15;
+/* Supersets: the link button, and the merged card listed round by round. */
+.exercise-name-line {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px 12px 18px;
-  border-radius: 24px;
-  border: 1px solid rgb(76 184 115 / 25%);
-  background: var(--streak-tile);
-  overflow: hidden;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 50%);
+  gap: 8px;
 }
 
-.rest-progress {
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 3px;
-  background: var(--surface-muted);
-}
-
-.rest-progress-fill {
-  height: 100%;
-  background: var(--streak);
-  transition: width 0.25s linear;
-}
-
-.rest-readout {
+.link-exercise {
+  flex: none;
   display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--surface-raised);
+  color: var(--text);
+  cursor: pointer;
 }
 
-.rest-label {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--streak);
+.link-exercise svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.rest-time {
-  font-size: 1.8rem;
+.link-exercise.linked {
+  background: var(--rpe);
+  color: #150f26;
+}
+
+.superset-card {
+  outline: 2px solid var(--rpe-tile);
+}
+
+.superset-title {
+  margin: 0 0 8px;
   font-weight: 800;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
+  color: var(--rpe);
 }
 
-.rest-controls {
+.superset-title span {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.superset-member {
+  margin-bottom: 8px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--border);
+}
+
+.superset-round {
+  margin: 10px 0 2px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.superset-round-exercise {
+  margin: 6px 0 2px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.set-row.next-up {
+  outline: 2px solid var(--rpe);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
+.sheet.superset-sheet h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+}
+
+.superset-options {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 14px;
+}
+
+.superset-option {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: var(--surface-muted);
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.rest-controls button {
-  min-width: 52px;
-  min-height: 40px;
-  padding: 0 10px;
-  border: none;
+.superset-option input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+.superset-option small {
+  display: block;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* Swapping: the Swap button and popup, and the sets finished before a swap. */
+.swap-button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
   border-radius: 999px;
-  background: rgb(255 255 255 / 12%);
+  background: var(--surface-raised);
   color: var(--text);
   font: inherit;
   font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sheet.swap-sheet h2 {
+  margin: 0 0 10px;
+  font-size: 1.2rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+}
+
+.swap-sheet input[type="search"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.swap-heading {
+  margin: 12px 0 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.swap-options {
+  display: grid;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.swap-option {
+  width: 100%;
+  min-height: 48px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.swap-option small {
+  display: block;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.finished-strip {
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--streak-tile);
+  font-size: 0.88rem;
+}
+
+.finished-strip strong {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--streak);
+}
+
+.superset-round-done {
+  margin: 6px 0 2px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--streak-tile);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Progression hint: more weight or more reps, before starting an exercise. */
+.progress-hint {
+  margin: 0 0 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--streak-tile);
+}
+
+.progress-hint strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: var(--streak);
+}
+
+.progress-hint-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.progress-hint-buttons.single {
+  grid-template-columns: 1fr;
+}
+
+.progress-hint-buttons button {
+  min-height: 52px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 12%);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
 }
 
-.rest-controls .rest-skip {
-  background: var(--streak);
-  color: #0b1a10;
+.progress-hint-buttons small {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
-/* Leave room so the timer doesn't cover the end of the page. */
-body.rest-timer-open {
-  padding-bottom: calc(var(--tab-bar-height) + 110px);
+.progress-hint-dismiss {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  margin-top: 4px;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-body.rest-timer-open .toast {
-  bottom: calc(var(--tab-bar-height) + 100px);
+/* Rest timer: a line between sets, which becomes the countdown after a set ends. */
+
+.rest-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  margin: 2px 0 6px;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-@media (min-width: 720px) {
-  .rest-timer {
-    left: 50%;
-    right: auto;
-    width: 440px;
-    transform: translateX(-50%);
-    bottom: 24px;
-  }
+.rest-line::before,
+.rest-line::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
 
-  body.rest-timer-open {
-    padding-bottom: 120px;
-  }
+.rest-countdown {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  margin: 2px 0 6px;
+  padding: 0 10px;
+  border-radius: 12px;
+  background: var(--load-tile);
+  overflow: hidden;
+}
+
+.rest-countdown-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: rgb(127 168 255 / 25%);
+  transition: width 0.25s linear;
+}
+
+.rest-countdown-time {
+  position: relative;
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.rest-countdown-controls {
+  position: relative;
+  display: flex;
+  gap: 4px;
+}
+
+.rest-countdown-controls button {
+  min-width: 44px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 12%);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sheet.rest-picker h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+}
+
+.rest-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 12px 0 14px;
+}
+
+.rest-presets button {
+  min-height: 52px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rest-presets button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-text);
 }
 
 /* Toast */

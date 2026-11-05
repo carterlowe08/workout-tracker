@@ -77,13 +77,14 @@ const UI = (() => {
   }
 
   // ask("Delete this workout?", { confirmLabel: "Delete", danger: true })
-  function ask(question, { confirmLabel = "OK", danger = false } = {}) {
+  function ask(question, { confirmLabel = "OK", cancelLabel = "Cancel", danger = false } = {}) {
     askSheet ||= buildAskSheet();
     if (answerPending) {
       answer(false); // A second question replaces one still open.
     }
     askSheet.message.textContent = question;
     askSheet.confirmButton.textContent = confirmLabel;
+    askSheet.cancelButton.textContent = cancelLabel;
     askSheet.confirmButton.classList.toggle("danger", danger);
     askSheet.sheet.showModal();
     // Start on Cancel for risky actions, so a stray Enter doesn't delete anything.

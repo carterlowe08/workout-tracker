@@ -40,6 +40,8 @@
   let routines = Store.read(KEYS.routines, []);
   let activeGroup = "All";
   let activeEquipment = "All";
+  // Exercises whose note is showing; kept here so it stays open when cards redraw.
+  const openNotes = new Set();
   // Drawing hundreds of rows at once is slow on phones; filters and search narrow it down.
   const MAX_LIBRARY_ROWS = 100;
 
@@ -315,8 +317,15 @@
     UI.showToast(`Deleted ${name}`);
   }
 
-  function removeExercise(index) {
-    draft.exercises.splice(index, 1);
+  async function removeExercise(index) {
+    const exercise = draft.exercises[index];
+    const earlierSets = exercise.sets.length - WorkoutLogic.ownSets(exercise).length;
+    const question = `Remove ${exercise.name} and the ${UI.plural(earlierSets, "finished set")} from before the swap?`;
+    if (earlierSets > 0 && !(await UI.ask(question, { confirmLabel: "Remove", danger: true }))) {
+      return;
+    }
+    draft.exercises.splice(draft.exercises.indexOf(exercise), 1);
+    draft.exercises = WorkoutLogic.withoutLoneSupersets(draft.exercises);
     saveDraft();
     renderDraft();
     renderLibrary();
@@ -341,10 +350,11 @@
   }
 
   function setsDoneText(exercise) {
-    const doneCount = exercise.sets.filter((set) => set.done).length;
+    const sets = WorkoutLogic.ownSets(exercise);
+    const doneCount = sets.filter((set) => set.done).length;
     const warmupCount = Object.keys(exercise.warmups || {}).length;
     const warmups = warmupCount > 0 ? ` · ${UI.plural(warmupCount, "warm-up")} done` : "";
-    return `${exercise.group} · ${doneCount}/${exercise.sets.length} sets done${warmups}`;
+    return `${exercise.group} · ${doneCount}/${sets.length} sets done${warmups}`;
   }
 
   // Warm-ups are not sets: they add no load, but the time they were done is
@@ -414,10 +424,13 @@
     return draft.exercises.flatMap((exercise) => exercise.sets);
   }
 
-  function advanceSet(set) {
+  function advanceSet(exercise, set, setIndex) {
     const now = Date.now();
     const state = setState(set);
+    const exerciseIndex = draft.exercises.indexOf(exercise);
     if (state === "ready") {
+      // Starting a set means the rest is over.
+      RestTimer.stop();
       // Starting a set means any set still running is finished.
       for (const other of allSets()) {
         if (setState(other) === "active") {
@@ -433,18 +446,28 @@
       set.done = false;
       delete set.startedAt;
       delete set.endedAt;
+      // Undoing the set just finished takes back the rest that followed it.
+      if (RestTimer.countdownAfter(draft.exercises, exerciseIndex, setIndex)) {
+        RestTimer.stop();
+      }
     }
     saveDraft();
-    renderDraft();
-    if (state !== "active") {
-      return;
-    }
     // Ending the last set finishes the workout, so ask how hard it was instead of resting.
-    if (allSets().every((other) => other.done) && !draft.rpeAsked) {
+    const finishesWorkout = state === "active" && allSets().every((other) => other.done) && !draft.rpeAsked;
+    if (finishesWorkout) {
       RestTimer.stop();
-      askWorkoutRpe();
-    } else {
-      RestTimer.start();
+    } else if (state === "active") {
+      // In a superset, rest waits until the round's last exercise is done.
+      const nextExercise = WorkoutLogic.nextInRound(draft.exercises, exercise, setIndex);
+      if (nextExercise) {
+        UI.showToast(`No rest. Next: ${nextExercise.name}`);
+      } else {
+        RestTimer.start(exercise.name, exerciseIndex, setIndex);
+      }
+    }
+    renderDraft();
+    if (finishesWorkout) {
+      askEndOfWorkoutQuestions();
     }
   }
 
@@ -469,11 +492,24 @@
     UI.showToast(`RPE ${rpe} saved · streak updated`);
   }
 
+  // How hard was it, then whether to leave notes for next time.
+  async function askEndOfWorkoutQuestions() {
+    await askWorkoutRpe();
+    const savedCount = await ExerciseNotes.askForWorkout(WorkoutLogic.exercisesToNote(WorkoutLogic.finishedExercises(draft.exercises)));
+    renderDraft();
+    if (savedCount > 0) {
+      UI.showToast(`Saved ${UI.plural(savedCount, "note")} for next time`);
+    }
+  }
+
   function renderSetRow(exercise, set, setIndex, previousSets) {
-    const setName = `${exercise.name} set ${setIndex + 1}`;
-    const previous = previousSets ? previousSets[setIndex] : null;
+    // Numbered among this exercise's own sets, not ones done before a swap.
+    const ownIndex = WorkoutLogic.ownSets({ sets: exercise.sets.slice(0, setIndex) }).length;
+    const setName = `${exercise.name} set ${ownIndex + 1}`;
+    const previous = previousSets ? previousSets[ownIndex] : null;
     const state = setState(set);
-    const row = el("div", { class: `set-row ${state}` });
+    const isNextUp = set === nextUpSetInWorkout();
+    const row = el("div", { class: `set-row ${state}${isNextUp ? " next-up" : ""}` });
     const { text, action } = SET_BUTTONS[state];
     const stepButton = el(
       "button",
@@ -481,12 +517,12 @@
         type: "button",
         class: `set-step ${state}`,
         "aria-label": `${action} ${setName}`,
-        onclick: () => advanceSet(set),
+        onclick: () => advanceSet(exercise, set, setIndex),
       },
       text,
     );
     row.append(
-      el("span", { class: "set-number" }, String(setIndex + 1)),
+      el("span", { class: "set-number" }, String(ownIndex + 1)),
       el(
         "span",
         {
@@ -505,6 +541,66 @@
       stepButton,
     );
     return row;
+  }
+
+  // The set a superset moves to next, unless a set is running right now.
+  function nextUpSetInWorkout() {
+    if (allSets().some((set) => setState(set) === "active")) {
+      return null;
+    }
+    const ids = new Set(draft.exercises.map((exercise) => exercise.supersetId).filter(Boolean));
+    for (const id of ids) {
+      const nextUp = WorkoutLogic.nextUpSet(WorkoutLogic.supersetMembers(draft.exercises, id));
+      if (nextUp) {
+        return nextUp;
+      }
+    }
+    return null;
+  }
+
+  // The line between two sets showing the rest time; tap it to change the time.
+  function restLine(exerciseName) {
+    const clock = WorkoutLogic.formatClock(RestTimer.secondsFor(exerciseName));
+    return el(
+      "button",
+      {
+        type: "button",
+        class: "rest-line",
+        "data-exercise": exerciseName,
+        "aria-label": `Change rest for ${exerciseName}, now ${clock}`,
+        onclick: () => RestTimer.openPicker(exerciseName),
+      },
+      `Rest ${clock}`,
+    );
+  }
+
+  // The rest line after this set's round, or null after the last one. A lone
+  // exercise's rounds are just its sets.
+  function restLineAfterRound(exercise, setIndex) {
+    const members = exercise.supersetId
+      ? WorkoutLogic.supersetMembers(draft.exercises, exercise.supersetId)
+      : [exercise];
+    return setIndex < WorkoutLogic.supersetRoundCount(members) - 1
+      ? restLine(WorkoutLogic.lastInRound(members, setIndex).name)
+      : null;
+  }
+
+  // What follows a set: the running countdown, the rest line, or nothing after the last set.
+  function afterSet(exercise, exerciseIndex, setIndex) {
+    const countdown = RestTimer.countdownAfter(draft.exercises, exerciseIndex, setIndex);
+    if (countdown) {
+      return countdown;
+    }
+    return setIndex < exercise.sets.length - 1 ? restLine(exercise.name) : null;
+  }
+
+  // A rest time changed: update its lines without redrawing the sets being typed in.
+  function updateRestLines(exerciseName) {
+    for (const line of draftList.querySelectorAll(".rest-line")) {
+      if (line.dataset.exercise === exerciseName) {
+        line.replaceWith(restLine(exerciseName));
+      }
+    }
   }
 
   function isDumbbellExercise(exerciseName) {
@@ -591,7 +687,7 @@
         class: "button-secondary small warmup-button",
         "aria-label": `Warm-up for ${exercise.name}`,
         onclick: () => {
-          const topSet = Math.max(0, ...exercise.sets.map((set) => set.weight));
+          const topSet = Math.max(0, ...WorkoutLogic.ownSets(exercise).map((set) => set.weight));
           if (!(topSet > 0)) {
             UI.showToast("Type your working weight in a set first, then tap Warm-up.", true);
             return;
@@ -603,19 +699,264 @@
     );
   }
 
-  function renderExerciseCard(exercise, index) {
-    const metaLine = el("span", { class: "row-meta" }, setsDoneText(exercise));
-    const previousSets = lastTimeSets(exercise.name);
+  // The Note button on a card, or null when the exercise has no note.
+  function noteButton(exerciseName, noteText) {
+    if (!noteText) {
+      return null;
+    }
     return el(
-      "li",
-      { class: "exercise-card" },
+      "button",
+      {
+        type: "button",
+        class: "note-button",
+        "aria-expanded": String(openNotes.has(exerciseName)),
+        "aria-label": `Note for ${exerciseName}`,
+        onclick: () => {
+          if (!openNotes.delete(exerciseName)) {
+            openNotes.add(exerciseName);
+          }
+          renderDraft();
+        },
+      },
+      "Note",
+    );
+  }
+
+  function openNote(exerciseName, noteText) {
+    if (!noteText || !openNotes.has(exerciseName)) {
+      return null;
+    }
+    return el(
+      "div",
+      { class: "exercise-note" },
+      el("p", {}, noteText),
+      el(
+        "button",
+        {
+          type: "button",
+          class: "link-button",
+          "aria-label": `Delete note for ${exerciseName}`,
+          onclick: () => deleteNote(exerciseName),
+        },
+        "Delete",
+      ),
+    );
+  }
+
+  async function deleteNote(exerciseName) {
+    const question = `Delete your note for ${exerciseName}?`;
+    if (!(await UI.ask(question, { confirmLabel: "Delete", danger: true }))) {
+      return;
+    }
+    if (ExerciseNotes.save(exerciseName, "")) {
+      openNotes.delete(exerciseName);
+      renderDraft();
+      UI.showToast(`Deleted note for ${exerciseName}`);
+    }
+  }
+
+  // A small icon: two chain links.
+  function linkIcon() {
+    const namespace = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(namespace, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    for (const path of ["M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1", "M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1"]) {
+      const shape = document.createElementNS(namespace, "path");
+      shape.setAttribute("d", path);
+      svg.append(shape);
+    }
+    return svg;
+  }
+
+  function linkButton(exercise) {
+    return el(
+      "button",
+      {
+        type: "button",
+        class: `link-exercise${exercise.supersetId ? " linked" : ""}`,
+        "aria-label": `Superset ${exercise.name} with other exercises`,
+        onclick: () => editSuperset(exercise),
+      },
+      linkIcon(),
+    );
+  }
+
+  async function editSuperset(exercise) {
+    const sourceIndex = draft.exercises.indexOf(exercise);
+    const others = draft.exercises.flatMap((other, index) => (index === sourceIndex ? [] : [{ other, index }]));
+    if (others.length === 0) {
+      UI.showToast("Add another exercise to the workout first.", true);
+      return;
+    }
+    const isLinked = ({ other }) => Boolean(exercise.supersetId) && other.supersetId === exercise.supersetId;
+    const picked = await SupersetSheet.open(
+      exercise.name,
+      others.map((entry) => ({
+        name: entry.other.name,
+        checked: isLinked(entry),
+        inOtherSuperset: Boolean(entry.other.supersetId) && !isLinked(entry),
+      })),
+    );
+    if (picked === null) {
+      return;
+    }
+    const wasLinked = Boolean(exercise.supersetId);
+    const chosen = picked.map((position) => others[position]);
+    draft.exercises = WorkoutLogic.linkExercises(
+      draft.exercises,
+      sourceIndex,
+      chosen.map(({ index }) => index),
+    );
+    saveDraft();
+    renderDraft();
+    if (chosen.length > 0) {
+      UI.showToast(`Superset: ${[exercise, ...chosen.map(({ other }) => other)].map((item) => item.name).join(" + ")}`);
+    } else if (wasLinked) {
+      UI.showToast("Superset removed");
+    }
+  }
+
+  async function swapExercise(exercise) {
+    const choice = await SwapSheet.open(
+      exercise,
+      allExercises(),
+      draft.exercises.map((item) => item.name),
+    );
+    if (!choice) {
+      return;
+    }
+    const swapped = WorkoutLogic.swapExercise(exercise, choice, lastTimeSets(choice.name), Date.now());
+    draft.exercises[draft.exercises.indexOf(exercise)] = swapped;
+    RestTimer.renameExercise(exercise.name, choice.name);
+    saveDraft();
+    renderDraft();
+    renderLibrary();
+    const finishedCount = swapped.sets.length - WorkoutLogic.ownSets(swapped).length;
+    const kept = finishedCount > 0 ? ` ${UI.plural(finishedCount, "finished set")} kept.` : "";
+    UI.showToast(`Swapped to ${choice.name}.${kept}`);
+  }
+
+  // Shown until every set is finished, when there's nothing left to swap.
+  function swapButton(exercise) {
+    if (WorkoutLogic.ownSets(exercise).every((set) => set.done)) {
+      return null;
+    }
+    return el(
+      "button",
+      {
+        type: "button",
+        class: "swap-button",
+        "aria-label": `Swap ${exercise.name} for another exercise`,
+        onclick: () => swapExercise(exercise),
+      },
+      "Swap",
+    );
+  }
+
+  // "135×10" in the chosen unit.
+  function setText(set) {
+    return `${UI.formatNumber(Units.fromPounds(set.weight))}×${set.reps}`;
+  }
+
+  // The green strip of sets finished before a swap.
+  function swappedOutStrip(exercise) {
+    return WorkoutLogic.swappedOut(exercise).map((part) =>
+      el(
+        "div",
+        { class: "finished-strip" },
+        el("strong", {}, `Finished: ${part.name}`),
+        part.sets.map(setText).join(", "),
+      ),
+    );
+  }
+
+  // The green box offering more weight or reps, before the exercise is started,
+  // when the last session matched the one before it.
+  function progressionBox(exercise) {
+    const sets = WorkoutLogic.ownSets(exercise);
+    const started = sets.some((set) => set.done || set.startedAt);
+    const lastSets = started || exercise.hintClosed ? null : WorkoutLogic.progressionHint(savedWorkouts, exercise.name, exercise.group);
+    if (!lastSets) {
+      return null;
+    }
+    const step = Units.weightStep({ dumbbell: isDumbbellExercise(exercise.name) });
+    const stepPounds = Units.toPounds(step);
+    const preview = (choice) => setText(WorkoutLogic.applyProgression([{}], lastSets, choice, stepPounds)[0]);
+    const close = (message) => {
+      exercise.hintClosed = true;
+      saveDraft();
+      renderDraft();
+      if (message) {
+        UI.showToast(message);
+      }
+    };
+    const choose = (choice, message) => {
+      exercise.sets = WorkoutLogic.applyProgression(exercise.sets, lastSets, choice, stepPounds, {
+        maxReps: MAX_REPS,
+        maxWeight: MAX_WEIGHT_LB,
+      });
+      close(message);
+    };
+    const stepText = `${UI.formatNumber(step)} ${Units.current()}`;
+    // A bodyweight move has no weight to add to.
+    const hasWeight = lastSets.some((set) => set.weight > 0);
+    return el(
+      "div",
+      { class: "progress-hint" },
+      el("strong", {}, "You matched last time. Go up?"),
+      el(
+        "div",
+        { class: `progress-hint-buttons${hasWeight ? "" : " single"}` },
+        hasWeight
+          ? el(
+              "button",
+              {
+                type: "button",
+                "aria-label": `Add ${stepText} to ${exercise.name}`,
+                onclick: () => choose("weight", `${exercise.name}: ${stepText} more on every set`),
+              },
+              `+${stepText}`,
+              el("small", {}, preview("weight")),
+            )
+          : null,
+        el(
+          "button",
+          {
+            type: "button",
+            "aria-label": `Add 1 rep to ${exercise.name}`,
+            onclick: () => choose("reps", `${exercise.name}: 1 more rep on every set`),
+          },
+          "+1 rep",
+          el("small", {}, preview("reps")),
+        ),
+      ),
+      el(
+        "button",
+        {
+          type: "button",
+          class: "progress-hint-dismiss",
+          "aria-label": `Not now for ${exercise.name}`,
+          onclick: () => close(),
+        },
+        "Not now",
+      ),
+    );
+  }
+
+  // One exercise's name, link button, progress, note and actions.
+  function exerciseHeader(exercise, index) {
+    const noteText = ExerciseNotes.textFor(exercise.name);
+    return [
       el(
         "div",
         { class: "exercise-card-header" },
-        el("div", {}, exerciseNameButton(exercise.name), metaLine),
+        el("div", { class: "exercise-name-line" }, exerciseNameButton(exercise.name), linkButton(exercise)),
+        el("span", { class: "row-meta" }, setsDoneText(exercise)),
         el(
           "div",
           { class: "row-actions" },
+          swapButton(exercise),
           warmupButton(exercise),
           el(
             "button",
@@ -628,18 +969,117 @@
             "Remove",
           ),
         ),
+        noteButton(exercise.name, noteText),
       ),
+      openNote(exercise.name, noteText),
+      progressionBox(exercise),
+    ];
+  }
+
+  function setLabels() {
+    return el(
+      "div",
+      { class: "set-row set-labels", "aria-hidden": "true" },
+      el("span", {}, "Set"),
+      el("span", {}, "Last"),
+      el("span", {}, Units.current()),
+      el("span", {}, "Reps"),
+      el("span", {}, ""),
+      el("span", {}, ""),
+    );
+  }
+
+  // Adds a round: one more set for each exercise in the superset.
+  function addRound(members) {
+    if (members.some((member) => member.sets.length >= MAX_SETS_PER_EXERCISE)) {
+      UI.showToast(`An exercise can have at most ${MAX_SETS_PER_EXERCISE} sets.`, true);
+      return;
+    }
+    for (const member of members) {
+      const lastSet = member.sets[member.sets.length - 1];
+      member.sets.push({ weight: lastSet.weight, reps: lastSet.reps, done: false });
+    }
+    saveDraft();
+    renderDraft();
+  }
+
+  // Removes the last round: the last set of each exercise that has one in it.
+  function removeRound(members) {
+    const roundCount = WorkoutLogic.supersetRoundCount(members);
+    for (const member of members) {
+      // Sets finished before a swap stay; only the exercise's own sets come off.
+      if (member.sets.length === roundCount && !member.sets[roundCount - 1].doneAs) {
+        member.sets.pop();
+      }
+    }
+    saveDraft();
+    renderDraft();
+  }
+
+  // A superset's merged card: each exercise's header, then the sets round by round.
+  function renderSupersetCard(members) {
+    const roundCount = WorkoutLogic.supersetRoundCount(members);
+    const memberIndex = (member) => draft.exercises.indexOf(member);
+    const setsInCard = members.flatMap((member) => member.sets);
+    const rounds = Array.from({ length: roundCount }, (_, round) => {
+      const inRound = members.filter((member) => member.sets[round]);
+      const countdown = inRound
+        .map((member) => RestTimer.countdownAfter(draft.exercises, memberIndex(member), round))
+        .find(Boolean);
+      return [
+        el("p", { class: "superset-round" }, `Round ${round + 1}`),
+        ...inRound.flatMap((member) => {
+          const set = member.sets[round];
+          if (set.doneAs) {
+            return [el("p", { class: "superset-round-done" }, `${set.doneAs.name}: ${setText(set)} ✓`)];
+          }
+          return [
+            el("p", { class: "superset-round-exercise" }, member.name),
+            renderSetRow(member, set, round, lastTimeSets(member.name)),
+          ];
+        }),
+        countdown || restLineAfterRound(members[0], round),
+      ];
+    }).flat();
+    return el(
+      "li",
+      { class: "exercise-card superset-card" },
+      el(
+        "p",
+        { class: "superset-title" },
+        "Superset",
+        el("span", {}, ` · ${setsInCard.filter((set) => set.done).length}/${setsInCard.length} sets done`),
+      ),
+      members.map((member) => el("div", { class: "superset-member" }, exerciseHeader(member, memberIndex(member)))),
+      setLabels(),
+      rounds,
       el(
         "div",
-        { class: "set-row set-labels", "aria-hidden": "true" },
-        el("span", {}, "Set"),
-        el("span", {}, "Last"),
-        el("span", {}, Units.current()),
-        el("span", {}, "Reps"),
-        el("span", {}, ""),
-        el("span", {}, ""),
+        { class: "set-buttons" },
+        el(
+          "button",
+          { type: "button", class: "add-set", disabled: roundCount === 1, onclick: () => removeRound(members) },
+          "− Remove round",
+        ),
+        el("button", { type: "button", class: "add-set", onclick: () => addRound(members) }, "+ Add round"),
       ),
-      ...exercise.sets.map((set, setIndex) => renderSetRow(exercise, set, setIndex, previousSets)),
+    );
+  }
+
+  function renderExerciseCard(exercise, index) {
+    const previousSets = lastTimeSets(exercise.name);
+    return el(
+      "li",
+      { class: "exercise-card" },
+      exerciseHeader(exercise, index),
+      swappedOutStrip(exercise),
+      setLabels(),
+      ...exercise.sets.flatMap((set, setIndex) =>
+        // A set from before a swap shows in the strip, but its rest may still be running.
+        set.doneAs
+          ? [RestTimer.countdownAfter(draft.exercises, index, setIndex)]
+          : [renderSetRow(exercise, set, setIndex, previousSets), afterSet(exercise, index, setIndex)],
+      ),
       el(
         "div",
         { class: "set-buttons" },
@@ -649,7 +1089,7 @@
             type: "button",
             class: "add-set",
             "aria-label": `Remove the last set of ${exercise.name}`,
-            disabled: exercise.sets.length === 1,
+            disabled: WorkoutLogic.ownSets(exercise).length === 1,
             onclick: () => removeLastSet(exercise),
           },
           "− Remove set",
@@ -665,8 +1105,20 @@
         el("li", { class: "empty" }, "No exercises yet. Tap Add on any exercise in the list."),
       );
     } else {
-      draftList.replaceChildren(...draft.exercises.map(renderExerciseCard));
+      const drawnSupersets = new Set();
+      const cards = draft.exercises.flatMap((exercise, index) => {
+        if (!exercise.supersetId) {
+          return [renderExerciseCard(exercise, index)];
+        }
+        if (drawnSupersets.has(exercise.supersetId)) {
+          return [];
+        }
+        drawnSupersets.add(exercise.supersetId);
+        return [renderSupersetCard(WorkoutLogic.supersetMembers(draft.exercises, exercise.supersetId))];
+      });
+      draftList.replaceChildren(...cards);
     }
+    RestTimer.stopIfNotShown();
     updateDraftSummary();
   }
 
@@ -758,12 +1210,10 @@
     }
     // Workouts saved without ending every set haven't been asked for an RPE yet.
     if (!draft.rpeAsked) {
-      await askWorkoutRpe();
+      await askEndOfWorkoutQuestions();
     }
-    // Only finished sets are saved; exercises with none finished are left out.
-    const finishedExercises = draft.exercises
-      .map((exercise) => ({ ...exercise, sets: exercise.sets.filter((set) => set.done) }))
-      .filter((exercise) => exercise.sets.length > 0);
+    // Only finished sets are saved, under the exercise each was done as.
+    const finishedExercises = WorkoutLogic.finishedExercises(draft.exercises);
     const today = UI.todayKey();
     const workout = {
       id: Date.now(),
@@ -935,7 +1385,8 @@
       exercises: draft.exercises.map((exercise) => ({
         name: exercise.name,
         group: exercise.group,
-        sets: exercise.sets.map((set) => ({ weight: set.weight, reps: set.reps })),
+        ...(exercise.supersetId ? { supersetId: exercise.supersetId } : {}),
+        sets: WorkoutLogic.ownSets(exercise).map((set) => ({ weight: set.weight, reps: set.reps })),
       })),
     };
     const updated = [routine, ...routines.filter((item) => item !== existing)];
@@ -960,6 +1411,7 @@
       exercises: routine.exercises.map((exercise) => ({
         name: exercise.name,
         group: exercise.group,
+        ...(exercise.supersetId ? { supersetId: exercise.supersetId } : {}),
         sets: exercise.sets.map((set) => ({ weight: set.weight, reps: set.reps, done: false })),
       })),
     };
@@ -1103,6 +1555,14 @@
     );
   }
 
+  RestTimer.connect({
+    // Where a countdown ends: the rest line, if there's another set after it.
+    replacementFor: (timer) => {
+      const exercise = draft.exercises.find((item) => item.name === timer.exerciseName);
+      return exercise ? restLineAfterRound(exercise, timer.setIndex) : null;
+    },
+    onSecondsChanged: updateRestLines,
+  });
   nameInput.value = draft.name;
   nameInput.addEventListener("input", () => {
     draft.name = nameInput.value;

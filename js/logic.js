@@ -100,7 +100,10 @@ const WorkoutLogic = (() => {
   function workoutMinutes(exercises, now) {
     const sets = exercises.flatMap((exercise) => exercise.sets);
     const timedSets = sets.filter((set) => set.startedAt);
-    const warmupTimes = exercises.flatMap((exercise) => Object.values(exercise.warmups || {}));
+    const warmupTimes = exercises.flatMap((exercise) => [
+      ...Object.values(exercise.warmups || {}),
+      ...(exercise.swappedWarmupTimes || []),
+    ]);
     let minutes = 0;
     if (timedSets.length > 0 || warmupTimes.length > 0) {
       const start = Math.min(
@@ -562,6 +565,286 @@ const WorkoutLogic = (() => {
     return RPE_HINTS[rpe] || "";
   }
 
+  // ----- Exercise notes -----
+  // Notes are kept per exercise, whatever the capitalization of its name, as
+  // { "bench press": "Seat on 4" }, and stay until they are replaced.
+  const MAX_NOTE_LENGTH = 200;
+
+  function exerciseKey(exerciseName) {
+    return exerciseName.trim().toLowerCase();
+  }
+
+  function exerciseNote(notes, exerciseName) {
+    const key = exerciseKey(exerciseName);
+    // Own properties only, so an exercise named "constructor" has no note.
+    const hasNote = Object.prototype.hasOwnProperty.call(notes, key) && typeof notes[key] === "string";
+    return hasNote ? notes[key] : "";
+  }
+
+  // A copy of notes with this exercise's note replaced; blank text removes it.
+  function withExerciseNote(notes, exerciseName, text) {
+    const key = exerciseKey(exerciseName);
+    const trimmed = text.trim().slice(0, MAX_NOTE_LENGTH);
+    const updated = { ...notes };
+    delete updated[key];
+    return trimmed ? { ...updated, [key]: trimmed } : updated;
+  }
+
+  // The names to ask about at the end of a workout: exercises with a finished
+  // set, in workout order, each once.
+  function exercisesToNote(exercises) {
+    const finished = exercises.filter((exercise) => exercise.sets.some((set) => set.done));
+    return [...new Set(finished.map((exercise) => exercise.name))];
+  }
+
+  // ----- Rest time per exercise -----
+  const MIN_REST_SECONDS = 15;
+  const MAX_REST_SECONDS = 600;
+
+  function clampRestSeconds(seconds) {
+    return Math.min(Math.max(seconds, MIN_REST_SECONDS), MAX_REST_SECONDS);
+  }
+
+  // This exercise's saved rest time, or the fallback if it has none (or an unusable one).
+  function restSecondsFor(rests, exerciseName, fallback) {
+    const key = exerciseKey(exerciseName);
+    const saved = Object.prototype.hasOwnProperty.call(rests, key) ? rests[key] : null;
+    return Number.isFinite(saved) ? clampRestSeconds(saved) : fallback;
+  }
+
+  function withRestSeconds(rests, exerciseName, seconds) {
+    const key = exerciseKey(exerciseName);
+    const updated = { ...rests };
+    delete updated[key];
+    return { ...updated, [key]: clampRestSeconds(seconds) };
+  }
+
+  // 90 -> "1:30"
+  function formatClock(totalSeconds) {
+    const minutes = Math.floor(totalSeconds / 60);
+    return `${minutes}:${String(totalSeconds % 60).padStart(2, "0")}`;
+  }
+
+  // ----- Supersets -----
+  // Exercises in a superset share a supersetId and sit next to each other.
+  // Round 1 is everyone's first set, round 2 everyone's second, and so on.
+
+  // A superset of one isn't a superset, so a lone member loses its id.
+  function withoutLoneSupersets(exercises) {
+    return exercises.map((exercise) => {
+      const isAlone =
+        exercise.supersetId && exercises.filter((other) => other.supersetId === exercise.supersetId).length < 2;
+      if (!isAlone) {
+        return exercise;
+      }
+      const { supersetId: _removed, ...unlinked } = exercise;
+      return unlinked;
+    });
+  }
+
+  // A new list where the source is in a superset with exactly the chosen
+  // exercises, which move right after it. Choosing none removes its superset.
+  function linkExercises(exercises, sourceIndex, chosenIndices) {
+    const previousId = exercises[sourceIndex].supersetId;
+    const chosenSet = new Set(chosenIndices.filter((index) => index !== sourceIndex));
+    const unlinked = exercises.map((exercise, index) => {
+      const leaves = index === sourceIndex || chosenSet.has(index) || (previousId && exercise.supersetId === previousId);
+      if (!leaves) {
+        return exercise;
+      }
+      const { supersetId: _removed, ...rest } = exercise;
+      return rest;
+    });
+    if (chosenSet.size === 0) {
+      return withoutLoneSupersets(unlinked);
+    }
+    const newId = Math.max(0, ...exercises.map((exercise) => exercise.supersetId || 0)) + 1;
+    const source = { ...unlinked[sourceIndex], supersetId: newId };
+    const chosen = [...chosenSet].sort((a, b) => a - b).map((index) => ({ ...unlinked[index], supersetId: newId }));
+    const reordered = unlinked.flatMap((exercise, index) => {
+      if (index === sourceIndex) {
+        return [source, ...chosen];
+      }
+      return chosenSet.has(index) ? [] : [exercise];
+    });
+    return withoutLoneSupersets(reordered);
+  }
+
+  function supersetMembers(exercises, supersetId) {
+    return exercises.filter((exercise) => exercise.supersetId === supersetId);
+  }
+
+  function supersetRoundCount(members) {
+    return Math.max(...members.map((member) => member.sets.length));
+  }
+
+  // The exercise still to do in this set's round, or null if the round is finished.
+  function nextInRound(exercises, exercise, setIndex) {
+    if (!exercise.supersetId) {
+      return null;
+    }
+    const members = supersetMembers(exercises, exercise.supersetId);
+    return members.find((member) => member.sets[setIndex] && !member.sets[setIndex].done) || null;
+  }
+
+  // The set to do next in a round that's partly finished, or null.
+  function nextUpSet(members) {
+    for (let round = 0; round < supersetRoundCount(members); round += 1) {
+      const sets = members.flatMap((member) => (member.sets[round] ? [member.sets[round]] : []));
+      if (sets.some((set) => set.done) && !sets.every((set) => set.done)) {
+        return sets.find((set) => !set.done);
+      }
+    }
+    return null;
+  }
+
+  // The last exercise with a set in this round: the one whose rest follows it.
+  function lastInRound(members, round) {
+    return members.findLast((member) => member.sets[round]);
+  }
+
+  // ----- Swapping an exercise -----
+  // A swapped exercise keeps its finished sets in place, each marked with
+  // doneAs: the exercise it was really done as. That keeps totals, workout time
+  // and superset rounds lined up; saving splits them back out.
+  const MAX_SWAP_SUGGESTIONS = 6;
+  const MAX_SWAP_RESULTS = 30;
+
+  // The sets still belonging to this exercise, not ones done before a swap.
+  function ownSets(exercise) {
+    return exercise.sets.filter((set) => !set.doneAs);
+  }
+
+  // Exercises to offer for a swap. With no search: suggestions, same muscle
+  // first. With a search: every word must match, in any order.
+  function swapChoices(allExercises, takenNames, group, typed) {
+    const taken = new Set(takenNames.map(exerciseKey));
+    const words = typed.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const matches = allExercises.filter((exercise) => {
+      const text = `${exercise.name} ${exercise.muscle || ""}`.toLowerCase();
+      return !taken.has(exerciseKey(exercise.name)) && words.every((word) => text.includes(word));
+    });
+    const sameMuscleFirst = [
+      ...matches.filter((exercise) => exercise.group === group),
+      ...matches.filter((exercise) => exercise.group !== group),
+    ];
+    return sameMuscleFirst.slice(0, words.length > 0 ? MAX_SWAP_RESULTS : MAX_SWAP_SUGGESTIONS);
+  }
+
+  // A copy of the exercise as `choice`: finished sets (and a running one) stay
+  // as done by the old exercise, and the sets left move to the new one, keeping
+  // their reps and using the weights from its last session (or 0).
+  function swapExercise(exercise, choice, previousSets, now) {
+    const doneAs = { name: exercise.name, group: exercise.group };
+    const previous = previousSets || [];
+    const fallback = previous[previous.length - 1] || { weight: 0 };
+    let leftCount = 0;
+    const sets = exercise.sets.map((set) => {
+      if (set.doneAs) {
+        return set;
+      }
+      if (set.done) {
+        return { ...set, doneAs };
+      }
+      if (set.startedAt) {
+        return { ...set, endedAt: now, done: true, doneAs };
+      }
+      const weight = (previous[leftCount] || fallback).weight;
+      leftCount += 1;
+      return { weight, reps: set.reps, done: false };
+    });
+    if (leftCount === 0) {
+      // The running set was the last one; the new exercise still needs a set.
+      const lastReps = sets[sets.length - 1].reps;
+      sets.push({ weight: (previous[0] || fallback).weight, reps: lastReps, done: false });
+    }
+    const { warmups = {}, swappedWarmupTimes = [], hintClosed: _closed, ...rest } = exercise;
+    return {
+      ...rest,
+      name: choice.name,
+      group: choice.group,
+      sets,
+      swappedWarmupTimes: [...swappedWarmupTimes, ...Object.values(warmups)],
+    };
+  }
+
+  // The exercises this one was swapped out of: [{ name, group, sets }], oldest first.
+  function swappedOut(exercise) {
+    const parts = [];
+    for (const set of exercise.sets) {
+      if (set.doneAs) {
+        const { doneAs, ...plainSet } = set;
+        const part = parts.find((item) => item.name === doneAs.name);
+        if (part) {
+          part.sets.push(plainSet);
+        } else {
+          parts.push({ name: doneAs.name, group: doneAs.group, sets: [plainSet] });
+        }
+      }
+    }
+    return parts;
+  }
+
+  // The workout as it's saved: finished sets only, each under the exercise it
+  // was really done as. Exercises with none finished are left out.
+  function finishedExercises(exercises) {
+    return exercises.flatMap((exercise) => {
+      const { swappedWarmupTimes: _times, hintClosed: _closed, ...current } = exercise;
+      const own = { ...current, sets: ownSets(exercise).filter((set) => set.done) };
+      return [...swappedOut(exercise), own].filter((part) => part.sets.length > 0);
+    });
+  }
+
+  // ----- Progression hints -----
+  // The sets of the exercise's most recent saved sessions, newest first.
+  // Workouts are newest first; ones saved before per-set logging are skipped.
+  function exerciseSessionSets(workouts, exerciseName) {
+    const key = exerciseKey(exerciseName);
+    return workouts.flatMap((workout) => {
+      const match = workout.exercises.find(
+        (exercise) => exerciseKey(exercise.name) === key && Array.isArray(exercise.sets),
+      );
+      return match && match.sets.length > 0 ? [match.sets] : [];
+    });
+  }
+
+  // True if every set of the earlier session was matched or beaten, in reps and weight.
+  function matchedSession(latestSets, earlierSets) {
+    return earlierSets.every(
+      (earlier, index) =>
+        latestSets[index] && latestSets[index].reps >= earlier.reps && latestSets[index].weight >= earlier.weight,
+    );
+  }
+
+  // The last session's sets if it's time to go up, otherwise null: needs two
+  // sessions to compare. Cardio "reps" aren't something to add to.
+  function progressionHint(workouts, exerciseName, group) {
+    if (group === "Cardio") {
+      return null;
+    }
+    const [latest, earlier] = exerciseSessionSets(workouts, exerciseName);
+    return latest && earlier && matchedSession(latest, earlier) ? latest : null;
+  }
+
+  // Sets built from the last session with the hint applied. Only sets not
+  // started change; extra sets use the last session's final numbers.
+  function applyProgression(sets, lastSets, choice, stepPounds, limits = {}) {
+    const { maxReps = 500, maxWeight = 2000 } = limits;
+    let position = 0;
+    return sets.map((set) => {
+      if (set.doneAs || set.done || set.startedAt) {
+        return set;
+      }
+      const base = lastSets[position] || lastSets[lastSets.length - 1];
+      position += 1;
+      return {
+        ...set,
+        weight: choice === "weight" ? Math.min(base.weight + stepPounds, maxWeight) : base.weight,
+        reps: choice === "reps" ? Math.min(base.reps + 1, maxReps) : base.reps,
+      };
+    });
+  }
+
   return {
     MET_VALUES,
     toDateKey,
@@ -604,6 +887,29 @@ const WorkoutLogic = (() => {
     recordWeight,
     weightAverage,
     weeklyWeightChange,
+    MAX_NOTE_LENGTH,
+    exerciseNote,
+    withExerciseNote,
+    exercisesToNote,
+    MAX_REST_SECONDS,
+    clampRestSeconds,
+    restSecondsFor,
+    withRestSeconds,
+    formatClock,
+    withoutLoneSupersets,
+    linkExercises,
+    supersetMembers,
+    supersetRoundCount,
+    nextInRound,
+    nextUpSet,
+    lastInRound,
+    ownSets,
+    swapChoices,
+    swapExercise,
+    swappedOut,
+    finishedExercises,
+    progressionHint,
+    applyProgression,
   };
 })();
 
