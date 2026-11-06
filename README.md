@@ -1,4 +1,4 @@
-# Workout Tracker
+# Sisu
 
 A mobile-friendly workout tracker: build workouts from about 780 exercises and
 log them set by set with a rest timer, track calories eaten and burned with

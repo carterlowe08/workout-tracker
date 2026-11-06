@@ -26,7 +26,7 @@
     const file = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     const link = UI.el("a", {
       href: URL.createObjectURL(file),
-      download: `workout-tracker-backup-${UI.todayKey()}.json`,
+      download: `sisu-backup-${UI.todayKey()}.json`,
     });
     document.body.append(link);
     link.click();
@@ -57,7 +57,7 @@
     const backup = parseBackup(await file.text());
     if (!backup) {
       status.textContent =
-        `"${file.name}" isn't a Workout Tracker backup. Pick the .json file from Download backup.`;
+        `"${file.name}" isn't a Sisu backup. Pick the .json file from Download backup.`;
       UI.showToast("That file isn't a backup from this app.", true);
       return;
     }
