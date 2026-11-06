@@ -24,6 +24,7 @@ const Store = (() => {
     goals: "workoutTracker.goals",
     exerciseNotes: "workoutTracker.exerciseNotes",
     exerciseRest: "workoutTracker.exerciseRestSeconds",
+    headerColor: "workoutTracker.headerColor",
   };
 
   // A missing key means a typo or an outdated copy of this file; fail loudly
