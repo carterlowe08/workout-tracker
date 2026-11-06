@@ -14,6 +14,7 @@ const Store = (() => {
     restSeconds: "workoutTracker.restSeconds",
     barWeights: "workoutTracker.barWeights",
     weightUnit: "workoutTracker.weightUnit",
+    theme: "workoutTracker.theme",
     checkIns: "workoutTracker.checkIns",
     weekGoal: "workoutTracker.weekGoalDays",
     bodyweight: "workoutTracker.bodyweightLb",

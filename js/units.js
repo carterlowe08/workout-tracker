@@ -39,36 +39,17 @@ const Units = (() => {
     return dumbbell ? 2.5 : 5;
   }
 
-  function addSwitch() {
-    const header = document.querySelector(".site-header");
-    if (!header) {
-      return;
-    }
-    const unitSwitch = UI.el(
-      "div",
-      { class: "unit-switch", role: "radiogroup", "aria-label": "Weight units" },
-      ...UNITS.map((unit) =>
-        UI.el(
-          "button",
-          {
-            type: "button",
-            role: "radio",
-            "aria-checked": String(unit === current()),
-            onclick: () => {
-              if (unit !== current() && Store.write(Store.KEYS.weightUnit, unit)) {
-                // Redraw the page so every weight shows in the new unit.
-                location.reload();
-              }
-            },
-          },
-          unit,
-        ),
-      ),
-    );
-    header.append(unitSwitch);
-  }
-
-  addSwitch();
+  UI.addHeaderSwitch({
+    label: "Weight units",
+    options: UNITS.map((unit) => ({ value: unit, text: unit })),
+    current: current(),
+    onPick: (unit) => {
+      if (Store.write(Store.KEYS.weightUnit, unit)) {
+        // Redraw the page so every weight shows in the new unit.
+        location.reload();
+      }
+    },
+  });
 
   return { current, fromPounds, toPounds, format, weightStep };
 })();

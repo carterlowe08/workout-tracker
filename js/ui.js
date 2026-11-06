@@ -111,6 +111,43 @@ const UI = (() => {
     return number.toLocaleString(undefined, { maximumFractionDigits: 1 });
   }
 
+  // Adds a two-way switch (lb / kg, Dark / Light) to the top of the page.
+  // `options` are { value, text }; onPick runs when a different one is tapped.
+  function addHeaderSwitch({ label, options, current, onPick }) {
+    const header = document.querySelector(".site-header");
+    if (!header) {
+      return;
+    }
+    let switches = header.querySelector(".header-switches");
+    if (!switches) {
+      switches = el("div", { class: "header-switches" });
+      header.append(switches);
+    }
+    let picked = current;
+    const buttons = options.map(({ value, text }) =>
+      el(
+        "button",
+        {
+          type: "button",
+          role: "radio",
+          "aria-checked": String(value === picked),
+          onclick: () => {
+            if (value === picked) {
+              return;
+            }
+            picked = value;
+            buttons.forEach((button, index) => {
+              button.setAttribute("aria-checked", String(options[index].value === picked));
+            });
+            onPick(value);
+          },
+        },
+        text,
+      ),
+    );
+    switches.append(el("div", { class: "header-switch", role: "radiogroup", "aria-label": label }, buttons));
+  }
+
   // "1 set", "3 sets".
   function plural(count, word) {
     return `${count} ${count === 1 ? word : `${word}s`}`;
@@ -120,5 +157,5 @@ const UI = (() => {
     return WorkoutLogic.toDateKey(new Date());
   }
 
-  return { el, ask, showToast, showSaveError, formatDate, formatNumber, plural, todayKey };
+  return { el, ask, showToast, showSaveError, addHeaderSwitch, formatDate, formatNumber, plural, todayKey };
 })();

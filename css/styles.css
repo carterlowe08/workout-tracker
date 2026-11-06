@@ -1,38 +1,18 @@
-/* "Soft" dark look: a black background, rounded cards, and one deep-colored
-   tile per metric (blue load, orange calories, purple RPE, green streak),
-   with white text and a brighter shade of the tile's color for accents. */
+/* "Soft" look: a black or light background (the Dark / Light switch), rounded
+   cards, and one deep-colored tile per metric (blue load, orange calories,
+   purple RPE, green streak), with white text and a brighter shade of the
+   tile's color for accents. */
 
 @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap");
 
+/* Colors that are the same in light and dark mode. */
 :root {
-  --bg: #000000;
-  --surface: #161618;
-  --surface-muted: #232327;
-  --surface-raised: #2e2e33;
-  --text: #ffffff;
-  --text-muted: #a1a1aa;
-  --border: #26262a;
-  --load: #7fa8ff;
   --load-tile: #1b2a44;
-  --calories: #ffa066;
   --calories-tile: #3a2717;
-  --rpe: #a98bff;
   --rpe-tile: #2a2142;
-  --streak: #4cb873;
   --streak-tile: #18301f;
-  --water: #4fd1e0;
   --water-tile: #0f2e33;
-  --weight: #ff8fab;
-  --carbs: #2ec4b6;
-  --fat: #e879c6;
-  --protein: #f7b32b;
-  --chart-line: var(--load);
-  /* Main actions are white buttons with black text. */
-  --accent: #ffffff;
-  --accent-text: #000000;
-  --accent-soft: rgb(255 255 255 / 10%);
   --done-soft: rgb(76 184 115 / 10%);
-  --danger: #ff6b6b;
   --rpe-low: #2a2142;
   --rpe-mid: #5b47a0;
   --rpe-high: #a98bff;
@@ -44,7 +24,124 @@
   --muscle-body: #0b0b0d;
   --radius: 24px;
   --tab-bar-height: 72px;
+}
+
+/* Dark mode colors. The tab bar, colored tiles and colored buttons listed here
+   use them in light mode too, so they look the same in both. */
+:root,
+:where([data-theme="light"])
+  :where(
+    .tab-bar,
+    .tile,
+    .stat[class*="tile-"],
+    .warmup-button,
+    .set-row.active,
+    .set-step.active,
+    .set-step.done,
+    .rest-countdown,
+    .finished-strip,
+    .superset-round-done,
+    .progress-hint,
+    .goal-reached,
+    .goal-behind,
+    .goal-reasons,
+    .goal-pick[aria-checked="true"],
+    .goal-picked,
+    .goal-preview,
+    .rpe-option[aria-pressed="true"],
+    .rpe-badge,
+    .link-exercise.linked,
+    .weight-log,
+    .calendar-day.rpe-low,
+    .calendar-day.rpe-mid,
+    .calendar-day.rpe-high,
+    .calendar-day.rpe-none
+  ) {
+  --bg: #000000;
+  --bar-bg: rgb(0 0 0 / 92%);
+  --surface: #161618;
+  --surface-muted: #232327;
+  --surface-raised: #2e2e33;
+  --text: #ffffff;
+  --text-soft: #d4d4d8;
+  --text-muted: #a1a1aa;
+  --text-faint: #52525b;
+  --border: #26262a;
+  --control-border: #3a3a40;
+  --load: #7fa8ff;
+  --calories: #ffa066;
+  --rpe: #a98bff;
+  --streak: #4cb873;
+  --water: #4fd1e0;
+  --weight: #ff8fab;
+  --carbs: #2ec4b6;
+  --fat: #e879c6;
+  --protein: #f7b32b;
+  --chart-line: var(--load);
+  /* Selected controls are white with black text. */
+  --accent: #ffffff;
+  --accent-text: #000000;
+  --accent-soft: rgb(255 255 255 / 10%);
+  /* Main actions (Start workout, Add, Start) are light gray with dark text. */
+  --action: #d4d4d8;
+  --action-text: #111114;
+  --danger: #ff6b6b;
   color-scheme: dark;
+}
+
+/* Those elements sit on a light page, so they also need their white text back. */
+:where([data-theme="light"])
+  :where(
+    .tab-bar,
+    .stat[class*="tile-"],
+    .warmup-button,
+    .set-row.active,
+    .rest-countdown,
+    .finished-strip,
+    .superset-round-done,
+    .progress-hint,
+    .goal-reasons,
+    .goal-pick[aria-checked="true"],
+    .goal-picked,
+    .goal-preview,
+    .rpe-option[aria-pressed="true"],
+    .calendar-day.rpe-low,
+    .calendar-day.rpe-mid,
+    .calendar-day.rpe-none
+  ) {
+  color: var(--text);
+}
+
+/* Light mode: light backgrounds and dark text. Colors used as text on the page
+   are deeper shades here, so they stay readable on white. Selected controls
+   are black with white text, since white ones would vanish. */
+:root[data-theme="light"] {
+  --bg: #f2f2f7;
+  --bar-bg: rgb(242 242 247 / 92%);
+  --surface: #ffffff;
+  --surface-muted: #e9e9ee;
+  --surface-raised: #dcdce2;
+  --text: #111114;
+  --text-soft: #3a3a40;
+  --text-muted: #5f5f68;
+  --text-faint: #a8a8b0;
+  --border: #dedee3;
+  --control-border: #c4c4cc;
+  --load: #2f66d6;
+  --calories: #c2570f;
+  --rpe: #6d45d9;
+  --streak: #1f8a4c;
+  --water: #0b8391;
+  --weight: #d03a66;
+  --carbs: #0f8a7e;
+  --fat: #bf3f99;
+  --protein: #a86f00;
+  --accent: #111114;
+  --accent-text: #ffffff;
+  --accent-soft: rgb(0 0 0 / 6%);
+  --action: #d2d2d9;
+  --danger: #d92d2d;
+  color-scheme: light;
 }
 
 * {
@@ -110,7 +207,7 @@ h1 {
   padding: 12px 16px;
   max-width: 760px;
   margin: 0 auto;
-  background: rgb(0 0 0 / 92%);
+  background: var(--bar-bg);
   backdrop-filter: blur(12px);
 }
 
@@ -133,7 +230,7 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgb(0 0 0 / 92%);
+  background: var(--bar-bg);
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--border);
   z-index: 10;
@@ -209,15 +306,20 @@ h1 {
   justify-content: space-between;
 }
 
-.unit-switch {
+.header-switches {
+  display: flex;
+  gap: 8px;
+}
+
+.header-switch {
   display: flex;
   padding: 3px;
   border-radius: 999px;
   background: var(--surface-muted);
 }
 
-.unit-switch button {
-  min-width: 44px;
+.header-switch button {
+  min-width: 42px;
   min-height: 32px;
   border: none;
   border-radius: 999px;
@@ -229,7 +331,7 @@ h1 {
   cursor: pointer;
 }
 
-.unit-switch button[aria-checked="true"] {
+.header-switch button[aria-checked="true"] {
   background: var(--accent);
   color: var(--accent-text);
 }
@@ -720,8 +822,8 @@ input[aria-invalid="true"] {
 }
 
 .button {
-  background: var(--accent);
-  color: var(--accent-text);
+  background: var(--action);
+  color: var(--action-text);
 }
 
 .button-secondary {
@@ -990,7 +1092,7 @@ input[aria-invalid="true"] {
   height: 44px;
   padding: 0;
   border-radius: 10px;
-  border: 2px solid #3a3a40;
+  border: 2px solid var(--control-border);
   background: transparent;
   color: var(--text);
   font: inherit;
@@ -998,6 +1100,12 @@ input[aria-invalid="true"] {
   font-weight: 800;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
+}
+
+.set-step.ready {
+  background: var(--action);
+  border-color: var(--action);
+  color: var(--action-text);
 }
 
 .set-step.active {
@@ -1474,7 +1582,7 @@ input[aria-invalid="true"] {
 .dashed-button {
   min-height: 50px;
   margin-top: 4px;
-  border: 1.5px dashed #3a3a40;
+  border: 1.5px dashed var(--control-border);
   border-radius: 22px;
   background: none;
   color: var(--text);
@@ -1879,7 +1987,7 @@ input[type="range"] {
 }
 
 .calendar-day.future {
-  color: #52525b;
+  color: var(--text-faint);
 }
 
 .calendar-day.rpe-low {
@@ -2668,7 +2776,7 @@ input[type="range"] {
   margin: 0;
   padding-left: 20px;
   font-size: 0.9rem;
-  color: #d4d4d8;
+  color: var(--text-soft);
 }
 
 .guide-steps li {
@@ -3204,7 +3312,7 @@ input[type="range"] {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgb(255 255 255 / 8%) url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff8fab' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>") center / 18px no-repeat;
+  background: var(--accent-soft) url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff8fab' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>") center / 18px no-repeat;
   transition: transform 0.2s ease;
 }
 
