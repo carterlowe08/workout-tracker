@@ -26,6 +26,7 @@ const Store = (() => {
     exerciseRest: "workoutTracker.exerciseRestSeconds",
     headerColor: "workoutTracker.headerColor",
     tileColors: "workoutTracker.tileColors",
+    tabBarColor: "workoutTracker.tabBarColor",
   };
 
   // A missing key means a typo or an outdated copy of this file; fail loudly

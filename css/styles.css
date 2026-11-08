@@ -240,9 +240,11 @@ h1 {
   color: inherit;
 }
 
-/* The button next to the name and the color menu it opens. */
+/* The palette buttons (next to the name, and at the end of the tab bar) and
+   the color menus they open (js/colorMenu.js). */
 
-.header-color-toggle {
+.header-color-toggle,
+.tab-bar-color-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -256,10 +258,7 @@ h1 {
   cursor: pointer;
 }
 
-.header-color-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: max(16px, calc((100% - 760px) / 2 + 16px));
+.color-menu {
   display: grid;
   gap: 12px;
   padding: 16px;
@@ -270,14 +269,28 @@ h1 {
   box-shadow: 0 12px 32px rgb(0 0 0 / 35%);
 }
 
-.header-color-targets {
+.header-color-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: max(16px, calc((100% - 760px) / 2 + 16px));
+}
+
+/* The tab bar's menu opens upward from its palette button at the right. */
+.tab-bar-color-menu {
+  position: fixed;
+  right: max(16px, calc((100% - 760px) / 2 + 16px));
+  bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom) + 8px);
+  z-index: 11;
+}
+
+.color-menu-targets {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   max-width: 206px;
 }
 
-.header-color-target {
+.color-menu-target {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -293,32 +306,49 @@ h1 {
   cursor: pointer;
 }
 
-.header-color-target[aria-pressed="true"] {
+.color-menu-target[aria-pressed="true"] {
   border-color: var(--accent);
   background: var(--accent);
   color: var(--accent-text);
 }
 
-.header-color-dot {
+.color-menu-dot {
   width: 14px;
   height: 14px;
   border: 1px solid var(--control-border);
   border-radius: 50%;
 }
 
-.header-color-title {
+.color-menu-title {
   margin: 0;
   font-size: 0.9rem;
   font-weight: 700;
 }
 
-.header-color-swatches {
+.color-menu-swatches {
   display: grid;
   grid-template-columns: repeat(4, 44px);
-  gap: 10px;
+  /* Room under each row for the "Default" label. */
+  gap: 26px 10px;
 }
 
-.header-color-swatch {
+.color-menu-swatch-cell {
+  position: relative;
+}
+
+.color-menu-default {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.color-menu-swatch {
   width: 44px;
   height: 44px;
   padding: 0;
@@ -327,12 +357,12 @@ h1 {
   cursor: pointer;
 }
 
-.header-color-swatch[aria-pressed="true"] {
+.color-menu-swatch[aria-pressed="true"] {
   outline: 3px solid var(--text);
   outline-offset: 2px;
 }
 
-.header-color-custom {
+.color-menu-custom {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -342,11 +372,11 @@ h1 {
   cursor: pointer;
 }
 
-.header-color-reset {
+.color-menu-reset {
   width: 100%;
 }
 
-.header-color-input {
+.color-menu-input {
   width: 72px;
   height: 40px;
   padding: 2px;
@@ -368,10 +398,20 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--bar-bg);
+  /* A color picked from the header's color button replaces the see-through black. */
+  background: var(--tab-bar-bg-custom, var(--bar-bg));
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--border);
   z-index: 10;
+}
+
+/* The tab bar's palette button: a little smaller than the tabs, in the icon color. */
+.tab-bar-color-toggle {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  padding: 9px;
+  color: var(--tab-bar-icon-custom, var(--text-muted));
 }
 
 @media (min-width: 720px) {
@@ -390,7 +430,7 @@ h1 {
   height: 48px;
   padding: 0 4px;
   border-radius: 24px;
-  color: var(--text-muted);
+  color: var(--tab-bar-icon-custom, var(--text-muted));
   font-size: 0;
   font-weight: 700;
   text-decoration: none;
@@ -425,8 +465,8 @@ h1 {
 
 .tab-bar a[aria-current="page"] {
   padding: 0 20px;
-  color: var(--accent-text);
-  background: var(--accent);
+  color: var(--tab-bar-pill-text-custom, var(--accent-text));
+  background: var(--tab-bar-pill-custom, var(--accent));
   font-size: 0.875rem;
 }
 
