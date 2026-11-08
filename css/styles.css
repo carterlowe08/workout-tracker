@@ -5,17 +5,19 @@
 
 @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap");
 
-/* Colors that are the same in light and dark mode. */
+/* Colors that are the same in light and dark mode. The four tile colors can be
+   changed from the header's color button (js/tileColors.js), which sets the
+   "-custom" variables; without them, these hand-picked shades are used. */
 :root {
-  --load-tile: #1b2a44;
-  --calories-tile: #3a2717;
-  --rpe-tile: #2a2142;
-  --streak-tile: #18301f;
+  --load-tile: var(--load-tile-custom, #1b2a44);
+  --calories-tile: var(--calories-tile-custom, #3a2717);
+  --rpe-tile: var(--rpe-tile-custom, #2a2142);
+  --streak-tile: var(--streak-tile-custom, #18301f);
   --water-tile: #0f2e33;
   --done-soft: rgb(76 184 115 / 10%);
-  --rpe-low: #2a2142;
-  --rpe-mid: #5b47a0;
-  --rpe-high: #a98bff;
+  --rpe-low: var(--rpe-tile);
+  --rpe-mid: var(--rpe-mid-custom, #5b47a0);
+  --rpe-high: var(--rpe-custom, #a98bff);
   --rpe-none: #5a5a63;
   /* Muscle map: main muscles, muscles that also work, other muscles, and the dark body. */
   --muscle-main: #ff4d3d;
@@ -68,10 +70,10 @@
   --text-faint: #52525b;
   --border: #26262a;
   --control-border: #3a3a40;
-  --load: #7fa8ff;
-  --calories: #ffa066;
-  --rpe: #a98bff;
-  --streak: #4cb873;
+  --load: var(--load-custom, #7fa8ff);
+  --calories: var(--calories-custom, #ffa066);
+  --rpe: var(--rpe-custom, #a98bff);
+  --streak: var(--streak-custom, #4cb873);
   --water: #4fd1e0;
   --weight: #ff8fab;
   --carbs: #2ec4b6;
@@ -127,10 +129,10 @@
   --text-faint: #a8a8b0;
   --border: #dedee3;
   --control-border: #c4c4cc;
-  --load: #2f66d6;
-  --calories: #c2570f;
-  --rpe: #6d45d9;
-  --streak: #1f8a4c;
+  --load: var(--load-custom-light, #2f66d6);
+  --calories: var(--calories-custom-light, #c2570f);
+  --rpe: var(--rpe-custom-light, #6d45d9);
+  --streak: var(--streak-custom-light, #1f8a4c);
   --water: #0b8391;
   --weight: #d03a66;
   --carbs: #0f8a7e;
@@ -268,6 +270,42 @@ h1 {
   box-shadow: 0 12px 32px rgb(0 0 0 / 35%);
 }
 
+.header-color-targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 206px;
+}
+
+.header-color-target {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 12px 6px 8px;
+  border: 1px solid var(--control-border);
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.header-color-target[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.header-color-dot {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--control-border);
+  border-radius: 50%;
+}
+
 .header-color-title {
   margin: 0;
   font-size: 0.9rem;
@@ -302,6 +340,10 @@ h1 {
   font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
+}
+
+.header-color-reset {
+  width: 100%;
 }
 
 .header-color-input {
@@ -2101,7 +2143,7 @@ input[type="range"] {
 
 .calendar-day.rpe-high {
   background: var(--rpe-high);
-  color: #150f26;
+  color: var(--rpe-high-text, #150f26);
 }
 
 /* A saved workout whose RPE was skipped still counts toward the streak. */

@@ -1,6 +1,7 @@
 // The color behind the Sisu name. Loaded in the page's <head>, so the saved
 // color applies before anything is drawn. Also adds the color button next to
-// the name, which opens a row of swatches and a Custom color choice.
+// the name, which opens a menu for the header and the four tile colors
+// (js/tileColors.js): pick one at the top, then a swatch or a Custom color.
 const HeaderColor = (() => {
   const DEFAULT_COLOR = "#d4d4d8";
   const DARK_TEXT = "#000000";
@@ -67,45 +68,96 @@ const HeaderColor = (() => {
     const toggle = UI.el("button", {
       type: "button",
       class: "header-color-toggle",
-      "aria-label": "Change header color",
+      "aria-label": "Change colors",
       "aria-expanded": "false",
     });
     toggle.innerHTML =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-.9 2-1.8 0-1.2-1-1.6-1-2.7 0-1 .8-1.5 1.8-1.5H17a4 4 0 0 0 4-4c0-4.4-4-8-9-8Z" /><circle cx="7.5" cy="11.5" r="1" /><circle cx="10.5" cy="7.5" r="1" /><circle cx="15.5" cy="8" r="1" /></svg>';
 
-    const swatchButtons = SWATCHES.map(({ name, color }) => {
-      const button = UI.el("button", {
+    // What the menu can recolor: the header, then each tile.
+    const targets = [
+      { label: "Header", title: "Header color", swatches: SWATCHES, current, set },
+      ...TileColors.TILES.map(({ name, label }) => ({
+        label,
+        title: `${label} tile color`,
+        swatches: TileColors.SWATCHES,
+        current: () => TileColors.current(name),
+        set: (color) => TileColors.set(name, color),
+      })),
+    ];
+    let target = targets[0];
+
+    const targetButtons = targets.map((choice) =>
+      UI.el(
+        "button",
+        {
+          type: "button",
+          class: "header-color-target",
+          onclick: () => {
+            target = choice;
+            showSelected();
+          },
+        },
+        UI.el("span", { class: "header-color-dot", "aria-hidden": "true" }),
+        choice.label,
+      ),
+    );
+    const title = UI.el("p", { class: "header-color-title" });
+    const swatchButtons = Array.from({ length: SWATCHES.length }, (_, index) =>
+      UI.el("button", {
         type: "button",
         class: "header-color-swatch",
-        "aria-label": name,
         onclick: () => {
-          pick(color);
+          pick(target.swatches[index].color);
           close();
         },
-      });
-      button.style.background = color;
-      return button;
-    });
+      }),
+    );
     const customInput = UI.el("input", { type: "color", class: "header-color-input" });
     customInput.addEventListener("input", () => pick(customInput.value));
     const menu = UI.el(
       "div",
-      { class: "header-color-menu", role: "group", "aria-label": "Header color", hidden: "" },
-      UI.el("p", { class: "header-color-title" }, "Header color"),
+      { class: "header-color-menu", role: "group", "aria-label": "Colors", hidden: "" },
+      UI.el("div", { class: "header-color-targets", role: "group", "aria-label": "What to color" }, ...targetButtons),
+      title,
       UI.el("div", { class: "header-color-swatches" }, ...swatchButtons),
       UI.el("label", { class: "header-color-custom" }, "Custom", customInput),
+      UI.el(
+        "button",
+        { type: "button", class: "button-secondary header-color-reset", onclick: resetAll },
+        "Reset to default colors",
+      ),
     );
 
+    // The header and all four tiles go back to how Sisu first looked.
+    function resetAll() {
+      const headerSaved = set(DEFAULT_COLOR);
+      const tilesSaved = TileColors.reset();
+      if (!headerSaved || !tilesSaved) {
+        UI.showSaveError();
+      }
+      showSelected();
+      close();
+    }
+
     function showSelected() {
-      const color = current();
+      targetButtons.forEach((button, index) => {
+        button.setAttribute("aria-pressed", String(targets[index] === target));
+        button.firstElementChild.style.background = targets[index].current();
+      });
+      title.textContent = target.title;
+      const color = target.current();
       swatchButtons.forEach((button, index) => {
-        button.setAttribute("aria-pressed", String(SWATCHES[index].color === color));
+        const swatch = target.swatches[index];
+        button.style.background = swatch.color;
+        button.setAttribute("aria-label", swatch.name);
+        button.setAttribute("aria-pressed", String(swatch.color === color));
       });
       customInput.value = color;
     }
 
     function pick(color) {
-      if (!set(color)) {
+      if (!target.set(color)) {
         UI.showSaveError();
       }
       showSelected();
@@ -118,6 +170,9 @@ const HeaderColor = (() => {
 
     toggle.addEventListener("click", () => {
       const opening = menu.hidden;
+      if (opening) {
+        showSelected();
+      }
       menu.hidden = !opening;
       toggle.setAttribute("aria-expanded", String(opening));
     });
