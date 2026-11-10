@@ -1980,6 +1980,11 @@ input[aria-invalid="true"] {
   font-weight: 500;
 }
 
+/* The line under the Activity level box describing the chosen level. */
+.activity-detail {
+  font-size: 0.875rem;
+}
+
 .choices {
   display: grid;
   grid-template-columns: 1fr 1fr;

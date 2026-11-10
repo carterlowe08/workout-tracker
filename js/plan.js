@@ -218,13 +218,19 @@
   }
   byId("weight").placeholder = `e.g. ${Units.fromPounds(175)}`;
   byId("goal-weight").placeholder = `e.g. ${Units.fromPounds(165)}`;
+  // The box shows only the level's name so it fits at phone width; its
+  // description goes on the line under the box.
+  function showActivityDetail() {
+    byId("activity-detail").textContent = WorkoutLogic.ACTIVITY_LEVELS[activitySelect.value]?.description ?? "";
+  }
+
   activitySelect.replaceChildren(
-    ...Object.entries(WorkoutLogic.ACTIVITY_LEVELS).map(([value, level]) =>
-      el("option", { value }, `${level.label}: ${level.description}`),
-    ),
+    ...Object.entries(WorkoutLogic.ACTIVITY_LEVELS).map(([value, level]) => el("option", { value }, level.label)),
   );
   activitySelect.value = "moderate";
+  activitySelect.addEventListener("change", showActivityDetail);
   restoreAnswers();
+  showActivityDetail();
   const savedGoals = Store.read(KEYS.nutritionGoals, null);
   if (savedGoals) {
     fillGoals(savedGoals);
