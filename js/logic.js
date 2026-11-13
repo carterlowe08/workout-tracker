@@ -565,6 +565,27 @@ const WorkoutLogic = (() => {
     return RPE_HINTS[rpe] || "";
   }
 
+  // ----- RPE per set -----
+  // A set can carry rpe: 6–10, picked as how many more reps were left.
+  const SET_RPES = [6, 7, 8, 9, 10];
+
+  // The set's RPE if it is one of the choices, otherwise null.
+  function setRpe(value) {
+    return SET_RPES.includes(value) ? value : null;
+  }
+
+  // "2 left" under 8 on the picker: reps that could still have been done.
+  function repsLeftLabel(rpe) {
+    const repsLeft = 10 - rpe;
+    return repsLeft >= 4 ? "4+ left" : `${repsLeft} left`;
+  }
+
+  // "@8" after a set in the Last column, or "" with no RPE.
+  function setRpeTag(set) {
+    const rpe = set ? setRpe(set.rpe) : null;
+    return rpe ? `@${rpe}` : "";
+  }
+
   // ----- Exercise notes -----
   // Notes are kept per exercise, whatever the capitalization of its name, as
   // { "bench press": "Seat on 4" }, and stay until they are replaced.
@@ -883,6 +904,10 @@ const WorkoutLogic = (() => {
     suggestNutritionPlan,
     rpeLabel,
     rpeHint,
+    SET_RPES,
+    setRpe,
+    repsLeftLabel,
+    setRpeTag,
     waterForDay,
     recordWeight,
     weightAverage,

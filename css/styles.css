@@ -1138,6 +1138,24 @@ input[aria-invalid="true"] {
   padding: 14px;
 }
 
+/* At phone width each set row needs every pixel for its seven columns, so the
+   workout card and exercise cards around it give up some padding. */
+@media (max-width: 420px) {
+  .workout-layout > .card {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .exercise-card {
+    padding: 12px 8px;
+  }
+
+  .set-row {
+    gap: 3px;
+    padding: 4px 2px;
+  }
+}
+
 /* Warm-up is a sand-colored chip, matching the calories tile. */
 .warmup-button {
   background: var(--calories-tile);
@@ -1212,9 +1230,9 @@ input[aria-invalid="true"] {
 
 .set-row {
   display: grid;
-  grid-template-columns: 26px 40px 1fr 1fr 26px 48px;
+  grid-template-columns: 26px 44px minmax(0, 1fr) minmax(0, 1fr) 36px 24px 46px;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   padding: 4px;
   border-radius: 14px;
   transition: background 0.15s;
@@ -1249,7 +1267,8 @@ input[aria-invalid="true"] {
 
 .set-previous {
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  line-height: 1.15;
   font-weight: 600;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
@@ -1267,9 +1286,41 @@ input[aria-invalid="true"] {
   padding: 8px 4px;
 }
 
+/* Last time's RPE, small under its weight × reps. */
+.set-previous-rpe {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--rpe);
+}
+
+/* The RPE box on a set: a button that looks like the number boxes beside it. */
+.set-rpe {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 40px;
+  padding: 0;
+  border: 1.5px solid var(--rpe);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.set-rpe.empty {
+  border-color: transparent;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
 /* Start -> End -> ✓ button: a rounded square that fills in as the set goes on. */
 .set-step {
-  width: 48px;
+  width: 46px;
   height: 44px;
   padding: 0;
   border-radius: 10px;
@@ -2396,7 +2447,7 @@ input[type="range"] {
 /* Plate calculator */
 
 .set-plates {
-  width: 26px;
+  width: 24px;
   height: 36px;
   padding: 0;
   border: none;
@@ -2641,7 +2692,7 @@ input[type="range"] {
 
 .history-set-row {
   display: grid;
-  grid-template-columns: 22px 1fr 1fr 32px;
+  grid-template-columns: 22px minmax(0, 1fr) minmax(0, 1fr) 44px 32px;
   align-items: center;
   gap: 8px;
   padding: 4px;
@@ -2787,6 +2838,46 @@ input[type="range"] {
 .rpe-option[aria-pressed="true"] {
   background: var(--rpe-tile);
   outline: 2px solid var(--rpe);
+}
+
+/* Set RPE picker: 6–10 in one row, reps left under each number. */
+.set-rpe-choices {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.set-rpe-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: 8px 2px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.set-rpe-number {
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.set-rpe-choice small {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.set-rpe-choice[aria-pressed="true"] {
+  background: var(--rpe-tile);
+  border-color: var(--rpe);
 }
 
 .rpe-sheet .sheet-footer {

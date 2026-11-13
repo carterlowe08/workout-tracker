@@ -54,7 +54,10 @@ const WorkoutEditor = (() => {
         name: exercise.name,
         group: exercise.group,
         sets: Array.isArray(exercise.sets)
-          ? exercise.sets.map((set) => ({ weight: set.weight, reps: set.reps, done: true }))
+          ? exercise.sets.map((set) => {
+              const rpe = WorkoutLogic.setRpe(set.rpe);
+              return { weight: set.weight, reps: set.reps, done: true, ...(rpe ? { rpe } : {}) };
+            })
           : Array.from({ length: Math.max(1, Math.round(exercise.sets) || 1) }, () => ({
               weight: exercise.weight || 0,
               reps: exercise.reps || 0,
@@ -104,6 +107,7 @@ const WorkoutEditor = (() => {
         dumbbell: WorkoutLogic.usesDumbbells(exercise.name, libraryEquipment(exercise.name)),
       }),
       numberBox(set, "reps", `${setName} reps`),
+      SetRpe.box(set, exercise.name, setIndex + 1, () => {}),
       el(
         "button",
         {
@@ -154,6 +158,7 @@ const WorkoutEditor = (() => {
         el("span", {}, "Set"),
         el("span", {}, Units.current()),
         el("span", {}, "Reps"),
+        el("span", {}, "RPE"),
         el("span", {}),
       ),
       ...exercise.sets.map((set, setIndex) => renderSetRow(exercise, set, setIndex)),

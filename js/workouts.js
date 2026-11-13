@@ -523,24 +523,35 @@
     );
     row.append(
       el("span", { class: "set-number" }, String(ownIndex + 1)),
-      el(
-        "span",
-        {
-          class: "set-previous",
-          "aria-label": previous
-            ? `Last time: ${Units.format(previous.weight)} for ${previous.reps} reps`
-            : "No previous set",
-        },
-        previous ? `${UI.formatNumber(Units.fromPounds(previous.weight))}×${previous.reps}` : "—",
-      ),
+      previousSet(previous),
       setInput(set, "weight", MAX_WEIGHT_LB, `${setName} weight in ${Units.current()}`, {
         dumbbell: isDumbbellExercise(exercise.name),
       }),
       setInput(set, "reps", MAX_REPS, `${setName} reps`),
+      SetRpe.box(set, exercise.name, ownIndex + 1, saveDraft),
       platesButton(exercise, set, setName),
       stepButton,
     );
     return row;
+  }
+
+  // The Last column: last time's weight × reps, with its RPE under it if one was logged.
+  function previousSet(previous) {
+    if (!previous) {
+      return el("span", { class: "set-previous", "aria-label": "No previous set" }, "—");
+    }
+    const rpeTag = WorkoutLogic.setRpeTag(previous);
+    return el(
+      "span",
+      {
+        class: "set-previous",
+        "aria-label": `Last time: ${Units.format(previous.weight)} for ${previous.reps} reps${
+          rpeTag ? `, RPE ${WorkoutLogic.setRpe(previous.rpe)}` : ""
+        }`,
+      },
+      `${UI.formatNumber(Units.fromPounds(previous.weight))}×${previous.reps}`,
+      rpeTag ? el("small", { class: "set-previous-rpe" }, rpeTag) : null,
+    );
   }
 
   // The set a superset moves to next, unless a set is running right now.
@@ -984,6 +995,7 @@
       el("span", {}, "Last"),
       el("span", {}, Units.current()),
       el("span", {}, "Reps"),
+      el("span", {}, "RPE"),
       el("span", {}, ""),
       el("span", {}, ""),
     );
