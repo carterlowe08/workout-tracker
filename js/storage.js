@@ -27,6 +27,8 @@ const Store = (() => {
     headerColor: "workoutTracker.headerColor",
     tileColors: "workoutTracker.tileColors",
     tabBarColor: "workoutTracker.tabBarColor",
+    // The Sunday of the last week whose recap opened by itself, so it pops up once.
+    recapShownWeek: "workoutTracker.recapShownWeek",
   };
 
   // A missing key means a typo or an outdated copy of this file; fail loudly

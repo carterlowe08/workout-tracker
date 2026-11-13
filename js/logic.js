@@ -571,6 +571,61 @@ const WorkoutLogic = (() => {
     });
   }
 
+  // ----- Weekly recap -----
+  // The totals for the week (Sunday to Saturday) starting on weekStart:
+  // { start, end, workouts, load (lb), averageRpe (null without one),
+  //   calories (burned), records (lifts whose record was beaten that week) }.
+  // data is { workouts, calorieEntries, checkIns } as saved.
+  function weekSummary(data, weekStart) {
+    const end = addDays(weekStart, 6);
+    const inWeek = (dateKey) => dateKey >= weekStart && dateKey <= end;
+    const workouts = data.workouts.filter((workout) => inWeek(workout.date));
+    const rpes = Object.entries(data.checkIns)
+      .filter(([dateKey, checkIn]) => inWeek(dateKey) && checkIn && checkIn.rpe > 0)
+      .map(([, checkIn]) => checkIn.rpe);
+    // Workouts are newest first, so these are everything up to each edge of the week.
+    const before = data.workouts.filter((workout) => workout.date < weekStart);
+    const throughEnd = data.workouts.filter((workout) => workout.date <= end);
+    return {
+      start: weekStart,
+      end,
+      workouts: workouts.length,
+      load: workouts.reduce((total, workout) => total + (workout.load || 0), 0),
+      averageRpe: rpes.length > 0 ? Math.round((rpes.reduce((a, b) => a + b, 0) / rpes.length) * 10) / 10 : null,
+      calories: data.calorieEntries
+        .filter((entry) => inWeek(entry.date))
+        .reduce((total, entry) => total + (entry.calories || 0), 0),
+      records: recordsBroken(before, throughEnd),
+    };
+  }
+
+  // The Sunday of the week before the one containing todayKey: the week a
+  // recap opened today is about.
+  function recapWeekStart(todayKey) {
+    return addDays(startOfWeek(todayKey), -7);
+  }
+
+  // How a number moved from the week before: { direction, amount }.
+  // direction is "up", "down", "same", "new" (the week before was 0) or
+  // "none" (either week has no value, like an RPE never logged). amount is
+  // a whole percent with percent: true, otherwise the difference.
+  function weekChange(current, previous, { percent = false } = {}) {
+    if (current === null || previous === null) {
+      return { direction: "none", amount: 0 };
+    }
+    if (current === previous) {
+      return { direction: "same", amount: 0 };
+    }
+    if (previous === 0) {
+      return { direction: "new", amount: current };
+    }
+    const difference = current - previous;
+    const amount = percent
+      ? Math.round((Math.abs(difference) / previous) * 100)
+      : Math.round(Math.abs(difference) * 10) / 10;
+    return { direction: difference > 0 ? "up" : "down", amount };
+  }
+
   // Ounces of water logged on one day. Entries look like { date, ounces }.
   function waterForDay(entries, dateKey) {
     return entries.reduce((total, entry) => (entry.date === dateKey ? total + entry.ounces : total), 0);
@@ -963,6 +1018,9 @@ const WorkoutLogic = (() => {
     bestSets,
     personalRecords,
     recordsBroken,
+    weekSummary,
+    recapWeekStart,
+    weekChange,
     nutritionForGrams,
     sumNutrition,
     macroPercents,

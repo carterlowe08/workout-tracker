@@ -4244,3 +4244,237 @@ input[type="range"] {
   margin: 0 0 14px;
   font-size: 0.85rem;
 }
+
+/* Weekly recap: full-screen slides, each in its metric's tile colors. */
+.recap-open {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+}
+
+.recap-open-title {
+  font-weight: 800;
+}
+
+.recap-open-meta {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.recap-sheet {
+  width: min(480px, 100vw);
+  max-width: 100vw;
+  height: min(860px, 100dvh);
+  max-height: 100dvh;
+  padding: 0;
+  border: none;
+  border-radius: 24px;
+  background: transparent;
+  overflow: hidden;
+}
+
+.recap-sheet::backdrop {
+  background: rgb(0 0 0 / 80%);
+}
+
+@media (max-width: 480px) {
+  .recap-sheet {
+    border-radius: 0;
+  }
+}
+
+.recap-holder {
+  height: 100%;
+}
+
+.recap-slide {
+  box-sizing: border-box;
+  height: 100%;
+  gap: 18px;
+  padding: 18px 20px 28px;
+  border-radius: 0;
+  color: #ffffff;
+}
+
+.recap-progress {
+  display: flex;
+  gap: 6px;
+}
+
+.recap-progress span {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 30%);
+}
+
+.recap-progress span.seen {
+  background: #ffffff;
+}
+
+.recap-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.recap-week {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgb(255 255 255 / 75%);
+}
+
+.recap-close {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 12%);
+  color: #ffffff;
+  font: inherit;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.recap-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  min-height: 0;
+}
+
+.recap-kicker {
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgb(255 255 255 / 75%);
+}
+
+.recap-number {
+  font-size: 4.5rem;
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -2px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.recap-unit {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--tile-accent);
+}
+
+.recap-change {
+  align-self: flex-start;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--tile-accent);
+  color: #0b0b0d;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.recap-bars {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.recap-bar-row {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.recap-bar-label {
+  color: rgb(255 255 255 / 75%);
+}
+
+.recap-bar-track {
+  height: 16px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 10%);
+}
+
+.recap-bar-fill {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: 8px;
+  background: var(--tile-accent);
+}
+
+.recap-bar-fill.previous {
+  opacity: 0.5;
+}
+
+.recap-records {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recap-records li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 8%);
+  font-weight: 600;
+}
+
+.recap-records strong {
+  color: var(--tile-accent);
+  white-space: nowrap;
+}
+
+.recap-more {
+  justify-content: center;
+  color: rgb(255 255 255 / 75%);
+}
+
+.recap-nav {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 10px;
+}
+
+.recap-nav button {
+  min-height: 52px;
+  border: none;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.recap-back {
+  background: rgb(255 255 255 / 12%);
+  color: #ffffff;
+}
+
+.recap-back:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.recap-next {
+  background: #ffffff;
+  color: #0b0b0d;
+}
