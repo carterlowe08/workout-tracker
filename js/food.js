@@ -80,6 +80,8 @@
       return false;
     }
     foodLog = updated;
+    // Calories in vs. out redraws from the food log.
+    document.dispatchEvent(new Event("food-log-changed"));
     return true;
   }
 

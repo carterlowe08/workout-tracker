@@ -4478,3 +4478,228 @@ input[type="range"] {
   background: #ffffff;
   color: #0b0b0d;
 }
+
+/* Calories in vs. out on the Calories page */
+
+.balance-card {
+  display: grid;
+  gap: 14px;
+}
+
+.balance-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.balance-card h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.balance-ranges {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+}
+
+.balance-range {
+  min-width: 44px;
+  min-height: 32px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.balance-range[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 800;
+}
+
+.balance-boxes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.balance-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--surface-muted);
+}
+
+.balance-box.tile {
+  gap: 2px;
+  padding: 12px;
+  border-radius: 16px;
+}
+
+.balance-box-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.balance-box-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.balance-box-caption {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.balance-box.tile .balance-box-title,
+.balance-box.tile .balance-box-value {
+  color: var(--tile-accent);
+}
+
+.balance-box.tile .balance-box-caption {
+  color: var(--text-soft);
+}
+
+.balance-section {
+  display: grid;
+  gap: 4px;
+}
+
+.balance-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.balance-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.balance-axis {
+  fill: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.balance-zero {
+  stroke: var(--text-faint);
+  stroke-width: 1.5;
+}
+
+.balance-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.balance-under {
+  fill: var(--calories);
+}
+
+.balance-over {
+  fill: var(--text-soft);
+}
+
+.balance-missing {
+  fill: var(--text-faint);
+}
+
+.balance-even {
+  fill: var(--text-muted);
+}
+
+.balance-weight-line {
+  fill: none;
+  stroke: var(--weight);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.balance-weight-end {
+  fill: var(--weight);
+}
+
+.balance-empty {
+  margin: 0;
+  padding: 18px 16px;
+  border-radius: 16px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.balance-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.balance-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.balance-key {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.balance-key-under {
+  background: var(--calories);
+}
+
+.balance-key-over {
+  background: var(--text-soft);
+}
+
+.balance-key-missing {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+
+.balance-key-weight {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--weight);
+}
+
+.balance-card .note {
+  margin: 0;
+}
+
+.balance-plan-link {
+  justify-self: start;
+  text-decoration: none;
+}

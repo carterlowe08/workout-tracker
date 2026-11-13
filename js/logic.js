@@ -658,6 +658,75 @@ const WorkoutLogic = (() => {
     return earlier ? { pounds: latest.pounds - earlier.pounds, since: earlier.date } : null;
   }
 
+  // ----- Calories in vs. out -----
+  // Calories in a pound of body weight, the usual rule of thumb.
+  const CALORIES_PER_POUND = 3500;
+  const BALANCE_RANGES = { "2W": 14, "4W": 28, "3M": 90 };
+
+  // Daily burn before exercise, from the Plan's answers: BMR at the Sedentary
+  // level. Logged exercise is added on top of this, so the activity level the
+  // Plan uses (which already counts workouts) would count them twice. Null
+  // without answers.
+  function maintenanceBeforeExercise(answers) {
+    if (!answers || !(answers.weightLb > 0) || !(answers.heightInches > 0) || !(answers.age > 0)) {
+      return null;
+    }
+    return suggestNutritionPlan({ ...answers, activity: "sedentary" }).tdee;
+  }
+
+  // Each of the `days` days ending on endDate, compared with maintenance.
+  // data is { foodLog, calorieEntries, weightLog } as saved. A day with no food
+  // logged has eaten and difference null and isn't counted, so a forgotten day
+  // doesn't look like a huge deficit. Returns
+  // { start, end, days: [{ date, eaten, burned, difference }], loggedDays,
+  //   overDays, underDays, totalDifference, predictedPounds,
+  //   weights: weigh-ins in range, scale: { from, to, change } or null }.
+  function calorieBalance(data, maintenance, endDate, dayCount) {
+    const start = addDays(endDate, -(dayCount - 1));
+    const inRange = (dateKey) => dateKey >= start && dateKey <= endDate;
+    const eatenByDay = {};
+    for (const entry of data.foodLog) {
+      if (inRange(entry.date)) {
+        eatenByDay[entry.date] = (eatenByDay[entry.date] || 0) + (entry.calories || 0);
+      }
+    }
+    const burnedByDay = {};
+    for (const entry of data.calorieEntries) {
+      if (inRange(entry.date)) {
+        burnedByDay[entry.date] = (burnedByDay[entry.date] || 0) + (entry.calories || 0);
+      }
+    }
+    const days = Array.from({ length: dayCount }, (_, index) => {
+      const date = addDays(start, index);
+      const eaten = date in eatenByDay ? eatenByDay[date] : null;
+      const burned = burnedByDay[date] || 0;
+      return { date, eaten, burned, difference: eaten === null ? null : eaten - burned - maintenance };
+    });
+    const logged = days.filter((day) => day.difference !== null);
+    const totalDifference = logged.reduce((total, day) => total + day.difference, 0);
+    const weights = data.weightLog.filter((entry) => inRange(entry.date));
+    const scale =
+      weights.length >= 2
+        ? {
+            from: weights[0].pounds,
+            to: weights[weights.length - 1].pounds,
+            change: roundToTenth(weights[weights.length - 1].pounds - weights[0].pounds),
+          }
+        : null;
+    return {
+      start,
+      end: endDate,
+      days,
+      loggedDays: logged.length,
+      overDays: logged.filter((day) => day.difference > 0).length,
+      underDays: logged.filter((day) => day.difference < 0).length,
+      totalDifference,
+      predictedPounds: logged.length === 0 ? null : roundToTenth(totalDifference / CALORIES_PER_POUND),
+      weights,
+      scale,
+    };
+  }
+
   function rpeLabel(rpe) {
     if (rpe <= 2) return "Very easy";
     if (rpe <= 4) return "Easy";
@@ -1037,6 +1106,10 @@ const WorkoutLogic = (() => {
     recordWeight,
     weightAverage,
     weeklyWeightChange,
+    CALORIES_PER_POUND,
+    BALANCE_RANGES,
+    maintenanceBeforeExercise,
+    calorieBalance,
     MAX_NOTE_LENGTH,
     exerciseNote,
     withExerciseNote,
