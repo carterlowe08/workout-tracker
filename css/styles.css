@@ -200,6 +200,12 @@ h1 {
   white-space: nowrap;
 }
 
+/* A table ignores width: 1px and grows to fit its longest line, so a hidden
+   table kept on one line made Home 564px wide on phones. Let its text wrap. */
+table.visually-hidden {
+  white-space: normal;
+}
+
 /* Header and navigation */
 
 .site-header {
@@ -4140,4 +4146,101 @@ input[type="range"] {
 
 .goal-sheet-buttons .button {
   flex: 1;
+}
+
+/* Personal records: tiles with a lift's best (1RM or reps), a trend line,
+   the set and its date. Home shows the newest 3, the newest one full width. */
+.record-wall {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.records-card .record-tile:first-child {
+  grid-column: 1 / -1;
+}
+
+.record-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px;
+  border: none;
+  border-radius: 20px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.record-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-soft);
+  overflow-wrap: anywhere;
+}
+
+.record-new {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--load);
+  color: #0b1424;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.record-best {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--load);
+  font-variant-numeric: tabular-nums;
+}
+
+.record-best small {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.record-trend {
+  display: block;
+  height: 28px;
+}
+
+.record-trend svg {
+  display: block;
+  width: 100%;
+  height: 28px;
+}
+
+.record-trend polyline {
+  fill: none;
+  stroke: var(--load);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.record-detail {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.records-see-all {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.records-sheet-sub {
+  margin: 0 0 14px;
+  font-size: 0.85rem;
 }

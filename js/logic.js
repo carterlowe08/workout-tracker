@@ -506,6 +506,71 @@ const WorkoutLogic = (() => {
     return { heaviest, bestEstimate };
   }
 
+  // ----- Personal records -----
+  const RECORD_TREND_SESSIONS = 8;
+
+  // One record per lift ever saved, newest record first:
+  // { name, kind, best, set, date, trend }. A lift with any weighted set is
+  // "weight": best is the top estimated one-rep max (lb) and set the set that
+  // gave it. A lift only ever done at 0 lb is "reps": best is the most reps.
+  // date is the first workout that reached best; trend is each session's
+  // best, oldest first, for the last few sessions.
+  function personalRecords(workouts) {
+    const lifts = new Map();
+    // Oldest workout first, so a record keeps the date it was first set.
+    for (const workout of [...workouts].reverse()) {
+      for (const exercise of workout.exercises) {
+        if (!Array.isArray(exercise.sets)) {
+          continue;
+        }
+        const sets = exercise.sets.filter((set) => set.reps > 0 && set.weight >= 0);
+        if (sets.length === 0) {
+          continue;
+        }
+        const key = exercise.name.trim().toLowerCase();
+        if (!lifts.has(key)) {
+          lifts.set(key, { name: exercise.name, sessions: [] });
+        }
+        const lift = lifts.get(key);
+        lift.name = exercise.name;
+        lift.sessions.push({ date: workout.date, sets });
+      }
+    }
+    const records = [...lifts.values()].map(({ name, sessions }) => {
+      const kind = sessions.some((session) => session.sets.some((set) => set.weight > 0)) ? "weight" : "reps";
+      const valueOf = (set) => (kind === "weight" ? estimatedOneRepMax(set.weight, set.reps) : set.reps);
+      let best = 0;
+      let bestSet = null;
+      let date = null;
+      const trend = [];
+      for (const session of sessions) {
+        let sessionBest = 0;
+        for (const set of session.sets) {
+          const value = valueOf(set);
+          sessionBest = Math.max(sessionBest, value);
+          if (value > best) {
+            best = value;
+            bestSet = { weight: set.weight, reps: set.reps };
+            date = session.date;
+          }
+        }
+        trend.push(sessionBest);
+      }
+      return { name, kind, best, set: bestSet, date, trend: trend.slice(-RECORD_TREND_SESSIONS) };
+    });
+    return records.sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
+  }
+
+  // The lifts whose record a newly saved workout beat, as records from
+  // personalRecords(after). Lifts done for the first time don't count.
+  function recordsBroken(workoutsBefore, workoutsAfter) {
+    const before = new Map(personalRecords(workoutsBefore).map((record) => [record.name.toLowerCase(), record]));
+    return personalRecords(workoutsAfter).filter((record) => {
+      const old = before.get(record.name.toLowerCase());
+      return old && old.kind === record.kind && record.best > old.best;
+    });
+  }
+
   // Ounces of water logged on one day. Entries look like { date, ounces }.
   function waterForDay(entries, dateKey) {
     return entries.reduce((total, entry) => (entry.date === dateKey ? total + entry.ounces : total), 0);
@@ -896,6 +961,8 @@ const WorkoutLogic = (() => {
     estimatedOneRepMax,
     exerciseSessions,
     bestSets,
+    personalRecords,
+    recordsBroken,
     nutritionForGrams,
     sumNutrition,
     macroPercents,

@@ -1251,6 +1251,7 @@
       UI.showSaveError();
       return;
     }
+    const newRecords = WorkoutLogic.recordsBroken(savedWorkouts, [workout, ...savedWorkouts]);
     savedWorkouts = [workout, ...savedWorkouts];
     logWorkoutCalories(workout);
     const checkedIn = RpeCheckIn.countToday();
@@ -1263,7 +1264,21 @@
     renderSaved();
     const burned = workout.calories ? ` · ~${UI.formatNumber(workout.calories)} cal burned` : "";
     const streak = checkedIn ? " · streak updated" : "";
-    UI.showToast(`Workout saved: ${Units.format(workout.load, { whole: true })} load${burned}${streak}`);
+    const saved = `Workout saved: ${Units.format(workout.load, { whole: true })} load${burned}${streak}`;
+    UI.showToast(newRecords.length > 0 ? `${recordsMessage(newRecords)} · ${saved}` : saved);
+  }
+
+  // "New record: Bench Press 185×6", or the lifts' names when there are several.
+  function recordsMessage(newRecords) {
+    if (newRecords.length > 1) {
+      return `New records: ${newRecords.map((record) => record.name).join(", ")}`;
+    }
+    const [record] = newRecords;
+    const set =
+      record.kind === "weight"
+        ? `${UI.formatNumber(Units.fromPounds(record.set.weight))}×${record.set.reps}`
+        : `${record.best} reps`;
+    return `New record: ${record.name} ${set}`;
   }
 
   function countRoutineSets(routine) {
