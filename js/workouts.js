@@ -535,7 +535,8 @@
     return row;
   }
 
-  // The Last column: last time's weight × reps, with its RPE under it if one was logged.
+  // The Last column: last time's weight on top, with × reps and its RPE (if
+  // one was logged) on a smaller line under it, so a weight like 61.2 kg fits.
   function previousSet(previous) {
     if (!previous) {
       return el("span", { class: "set-previous", "aria-label": "No previous set" }, "—");
@@ -549,8 +550,13 @@
           rpeTag ? `, RPE ${WorkoutLogic.setRpe(previous.rpe)}` : ""
         }`,
       },
-      `${UI.formatNumber(Units.fromPounds(previous.weight))}×${previous.reps}`,
-      rpeTag ? el("small", { class: "set-previous-rpe" }, rpeTag) : null,
+      el("span", { class: "set-previous-weight" }, UI.formatNumber(Units.fromPounds(previous.weight))),
+      el(
+        "span",
+        { class: "set-previous-detail" },
+        el("span", {}, `×${previous.reps}`),
+        rpeTag ? el("span", { class: "set-previous-rpe" }, rpeTag) : null,
+      ),
     );
   }
 

@@ -1272,9 +1272,22 @@ input[aria-invalid="true"] {
   font-weight: 600;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+.set-previous-weight {
+  display: block;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+/* "×10 @8" under the weight. Each piece stays whole; @8 drops to its own
+   line instead of being cut off when the reps are long. */
+.set-previous-detail {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  column-gap: 3px;
+  font-size: 0.68rem;
+  white-space: nowrap;
 }
 
 .set-row input {
@@ -1286,10 +1299,8 @@ input[aria-invalid="true"] {
   padding: 8px 4px;
 }
 
-/* Last time's RPE, small under its weight × reps. */
+/* Last time's RPE, after its reps. */
 .set-previous-rpe {
-  display: block;
-  font-size: 0.68rem;
   font-weight: 700;
   color: var(--rpe);
 }
