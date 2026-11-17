@@ -1905,7 +1905,8 @@ input[aria-invalid="true"] {
 
 .tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   gap: 4px;
   padding: 4px;
   margin-bottom: 14px;
@@ -4702,4 +4703,43 @@ input[type="range"] {
 .balance-plan-link {
   justify-self: start;
   text-decoration: none;
+}
+
+/* ----- Barcode scanning (Calories → Log → Scan) ----- */
+
+.scan-view {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  border-radius: 16px;
+  background: var(--surface-muted);
+}
+
+.scan-view video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* A wide box in the middle shows where to hold the barcode. */
+.scan-frame {
+  position: absolute;
+  inset: 30% 12%;
+  border: 3px solid rgb(255 255 255 / 85%);
+  border-radius: 12px;
+  box-shadow: 0 0 0 999px rgb(0 0 0 / 35%);
+}
+
+#scan-again {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.scan-form {
+  margin-top: 4px;
+}
+
+.scan-form .button {
+  white-space: nowrap;
 }

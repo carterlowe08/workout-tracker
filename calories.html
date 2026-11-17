@@ -4,13 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Calories · Sisu</title>
-    <link rel="stylesheet" href="css/styles.css?v=e1efb85" />
-    <script src="js/storage.js?v=e1efb85"></script>
-    <script src="js/theme.js?v=e1efb85"></script>
-    <script src="js/colorMenu.js?v=e1efb85"></script>
-    <script src="js/headerColor.js?v=e1efb85"></script>
-    <script src="js/tileColors.js?v=e1efb85"></script>
-    <script src="js/tabBarColor.js?v=e1efb85"></script>
+    <link rel="stylesheet" href="css/styles.css?v=a2a230a" />
+    <script src="js/storage.js?v=a2a230a"></script>
+    <script src="js/theme.js?v=a2a230a"></script>
+    <script src="js/colorMenu.js?v=a2a230a"></script>
+    <script src="js/headerColor.js?v=a2a230a"></script>
+    <script src="js/tileColors.js?v=a2a230a"></script>
+    <script src="js/tabBarColor.js?v=a2a230a"></script>
   </head>
   <body>
     <nav class="tab-bar" aria-label="Main">
@@ -194,7 +194,22 @@
       </div>
       <div class="tabs" role="tablist">
         <button type="button" role="tab" class="tab" id="tab-search" aria-selected="true" aria-controls="panel-search">Search</button>
-        <button type="button" role="tab" class="tab" id="tab-manual" aria-selected="false" aria-controls="panel-manual">Manual entry</button>
+        <button type="button" role="tab" class="tab" id="tab-scan" aria-selected="false" aria-controls="panel-scan">Scan</button>
+        <button type="button" role="tab" class="tab" id="tab-manual" aria-selected="false" aria-controls="panel-manual">Manual</button>
+      </div>
+
+      <div role="tabpanel" id="panel-scan" aria-labelledby="tab-scan" hidden>
+        <div class="scan-view" id="scan-view">
+          <video id="scan-video" playsinline muted autoplay></video>
+          <div class="scan-frame" aria-hidden="true"></div>
+        </div>
+        <p class="search-status" id="scan-status" aria-live="polite"></p>
+        <button type="button" class="button-secondary" id="scan-again" hidden>Scan again</button>
+        <form class="search-row scan-form" id="scan-form" novalidate>
+          <label class="visually-hidden" for="scan-code">Barcode number</label>
+          <input id="scan-code" type="text" inputmode="numeric" maxlength="14" placeholder="Or type the number" autocomplete="off" />
+          <button type="submit" class="button small" id="scan-lookup">Look up</button>
+        </form>
       </div>
 
       <div role="tabpanel" id="panel-search" aria-labelledby="tab-search">
@@ -255,14 +270,15 @@
       </form>
     </dialog>
 
-    <script src="js/logic.js?v=e1efb85"></script>
-    <script src="js/ui.js?v=e1efb85"></script>
-    <script src="js/units.js?v=e1efb85"></script>
-    <script src="js/calories.js?v=e1efb85"></script>
-    <script src="js/water.js?v=e1efb85"></script>
-    <script src="js/weight.js?v=e1efb85"></script>
-    <script src="js/foodSearch.js?v=e1efb85"></script>
-    <script src="js/food.js?v=e1efb85"></script>
-    <script src="js/calorieBalance.js?v=e1efb85"></script>
+    <script src="js/logic.js?v=a2a230a"></script>
+    <script src="js/ui.js?v=a2a230a"></script>
+    <script src="js/units.js?v=a2a230a"></script>
+    <script src="js/calories.js?v=a2a230a"></script>
+    <script src="js/water.js?v=a2a230a"></script>
+    <script src="js/weight.js?v=a2a230a"></script>
+    <script src="js/foodSearch.js?v=a2a230a"></script>
+    <script src="js/barcode.js?v=a2a230a"></script>
+    <script src="js/food.js?v=a2a230a"></script>
+    <script src="js/calorieBalance.js?v=a2a230a"></script>
   </body>
 </html>

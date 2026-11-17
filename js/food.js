@@ -45,6 +45,11 @@
   const manualTab = document.getElementById("tab-manual");
   const searchPanel = document.getElementById("panel-search");
   const manualPanel = document.getElementById("panel-manual");
+  const tabs = {
+    search: { tab: searchTab, panel: searchPanel },
+    scan: { tab: document.getElementById("tab-scan"), panel: document.getElementById("panel-scan") },
+    manual: { tab: manualTab, panel: manualPanel },
+  };
   const searchForm = document.getElementById("food-search-form");
   const queryInput = document.getElementById("food-query");
   const searchButton = document.getElementById("food-search-button");
@@ -311,11 +316,15 @@
   // ----- Add-food sheet -----
 
   function showTab(tabName) {
-    const isSearch = tabName === "search";
-    searchTab.setAttribute("aria-selected", String(isSearch));
-    manualTab.setAttribute("aria-selected", String(!isSearch));
-    searchPanel.hidden = !isSearch;
-    manualPanel.hidden = isSearch;
+    for (const [name, { tab, panel }] of Object.entries(tabs)) {
+      tab.setAttribute("aria-selected", String(name === tabName));
+      panel.hidden = name !== tabName;
+    }
+    if (tabName === "scan") {
+      startScan();
+    } else {
+      stopScan();
+    }
   }
 
   function setStatus(message, isError = false) {
@@ -372,7 +381,7 @@
     try {
       const foods = await FoodSearch.search(query);
       if (foods.length === 0) {
-        setStatus(`No foods found for “${query}”. Try simpler words, or use Manual entry.`, true);
+        setStatus(`No foods found for “${query}”. Try simpler words, or use the Manual tab.`, true);
       } else {
         setStatus(`${UI.plural(foods.length, "result")} for “${query}”`);
         renderResults(foods);
@@ -475,6 +484,92 @@
     }
   }
 
+  // ----- Scan tab -----
+
+  const scanVideo = document.getElementById("scan-video");
+  const scanView = document.getElementById("scan-view");
+  const scanStatus = document.getElementById("scan-status");
+  const scanAgainButton = document.getElementById("scan-again");
+  const scanForm = document.getElementById("scan-form");
+  const scanCodeInput = document.getElementById("scan-code");
+  const scanLookupButton = document.getElementById("scan-lookup");
+  let stopCamera = null;
+  // Counts lookups so an answer for an older barcode is ignored.
+  let lookupNumber = 0;
+
+  function setScanStatus(message, isError = false) {
+    scanStatus.textContent = message;
+    scanStatus.classList.toggle("error", isError);
+  }
+
+  function stopScan() {
+    if (stopCamera) {
+      stopCamera();
+      stopCamera = null;
+    }
+    lookupNumber += 1;
+  }
+
+  function startScan() {
+    stopScan();
+    scanView.hidden = false;
+    scanAgainButton.hidden = true;
+    setScanStatus("Point your camera at the barcode on the package.");
+    stopCamera = Barcode.startScanning(scanVideo, lookUpBarcode, (message) => {
+      stopCamera = null;
+      scanView.hidden = true;
+      setScanStatus(message, true);
+    });
+  }
+
+  async function lookUpBarcode(code) {
+    stopCamera = null;
+    const thisLookup = ++lookupNumber;
+    scanView.hidden = true;
+    scanAgainButton.hidden = true;
+    scanLookupButton.disabled = true;
+    setScanStatus(`Looking up ${code}…`);
+    try {
+      const food = await Barcode.lookUp(code);
+      if (thisLookup !== lookupNumber) {
+        return;
+      }
+      if (food) {
+        scanCodeInput.value = "";
+        showTab("search");
+        selectFood(food);
+        return;
+      }
+      setScanStatus(`No product found for ${code}. Try scanning again, search by name, or use the Manual tab.`, true);
+    } catch (error) {
+      if (!(error instanceof Barcode.BarcodeError)) {
+        throw error;
+      }
+      if (thisLookup === lookupNumber) {
+        setScanStatus(error.message, true);
+      }
+    } finally {
+      scanLookupButton.disabled = false;
+      if (thisLookup === lookupNumber) {
+        scanAgainButton.hidden = false;
+      }
+    }
+  }
+
+  function lookUpTypedBarcode(event) {
+    event.preventDefault();
+    const code = Barcode.cleanCode(scanCodeInput.value);
+    if (!code) {
+      setScanStatus("A barcode number is 8, 12 or 13 digits, like 028400090896.", true);
+      return;
+    }
+    stopScan();
+    lookUpBarcode(code);
+  }
+
+  scanAgainButton.addEventListener("click", startScan);
+  scanForm.addEventListener("submit", lookUpTypedBarcode);
+
   function readManualNumber({ input, max, label }, required) {
     if (input.value === "") {
       return required ? { error: `Enter ${label.toLowerCase()}.` } : { value: 0 };
@@ -535,6 +630,7 @@
   }
 
   searchTab.addEventListener("click", () => showTab("search"));
+  tabs.scan.tab.addEventListener("click", () => showTab("scan"));
   manualTab.addEventListener("click", () => {
     showTab("manual");
     manualName.focus();
@@ -549,6 +645,8 @@
   addButton.addEventListener("click", addSelectedFood);
   manualPanel.addEventListener("submit", addManualFood);
   document.getElementById("food-dialog-close").addEventListener("click", () => dialog.close());
+  // Turn the camera off whenever the sheet closes, however it was closed.
+  dialog.addEventListener("close", stopScan);
   // Clicking the dimmed area outside the sheet closes it.
   dialog.addEventListener("click", (event) => {
     if (event.target === dialog) {

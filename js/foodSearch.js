@@ -52,6 +52,7 @@ const FoodSearch = (() => {
       name: readableName(food.description || "Unnamed food"),
       brand: food.brandName || food.brandOwner || "",
       branded: food.dataType === "Branded",
+      upc: food.gtinUpc || "",
       per100g: Object.fromEntries(
         Object.entries(NUTRIENT_IDS).map(([field, nutrientId]) => [field, nutrientPer100g(food, nutrientId)]),
       ),
@@ -76,43 +77,58 @@ const FoodSearch = (() => {
     }
   }
 
+  // Sends one search to USDA and turns the results into the app's foods.
+  async function requestFoods(body) {
+    let response;
+    try {
+      response = await fetch(SEARCH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    } catch {
+      throw new FoodSearchError(
+        "Couldn't reach the food database. Check your internet connection, or use the Manual tab.",
+      );
+    }
+    if (response.status === 429) {
+      throw new FoodSearchError(
+        "Search limit reached. The free key allows about 10 searches an hour. Pick a recent food or use the Manual tab.",
+      );
+    }
+    if (!response.ok) {
+      throw new FoodSearchError(
+        `The food database had a problem (error ${response.status}). Try again, or use the Manual tab.`,
+      );
+    }
+    const data = await response.json();
+    return (data.foods || []).map(toFood);
+  }
+
   async function search(rawQuery) {
     const query = rawQuery.trim().toLowerCase();
     const cached = readCache(query);
     if (cached) {
       return cached;
     }
-
-    let response;
-    try {
-      response = await fetch(SEARCH_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, pageSize: 25, dataType: DATA_TYPES }),
-      });
-    } catch {
-      throw new FoodSearchError(
-        "Couldn't reach the food database. Check your internet connection, or use Manual entry.",
-      );
-    }
-    if (response.status === 429) {
-      throw new FoodSearchError(
-        "Search limit reached. The free key allows about 10 searches an hour. Pick a recent food or use Manual entry.",
-      );
-    }
-    if (!response.ok) {
-      throw new FoodSearchError(
-        `The food database had a problem (error ${response.status}). Try again, or use Manual entry.`,
-      );
-    }
-
-    const data = await response.json();
-    const foods = (data.foods || []).map(toFood);
+    const foods = await requestFoods({ query, pageSize: 25, dataType: DATA_TYPES });
     // Everyday foods first, then brand-name products. The sort keeps USDA's order within each group.
     foods.sort((a, b) => Number(a.branded) - Number(b.branded));
     writeCache(query, foods);
     return foods;
   }
 
-  return { search, FoodSearchError };
+  // USDA's packaged foods list many products by barcode. Returns the matching
+  // product, or null. Leading zeros differ between scanners and USDA, so they
+  // are ignored when comparing.
+  async function findByBarcode(code) {
+    const withoutZeros = (text) => text.replace(/^0+/, "");
+    // iPhones read US barcodes as 13 digits with a leading 0 ("0028400335799");
+    // USDA's search only finds the 12-digit form ("028400335799").
+    const query = code.length === 13 && code.startsWith("0") ? code.slice(1) : code;
+    const foods = await requestFoods({ query, pageSize: 5, dataType: ["Branded"] });
+    return foods.find((food) => food.upc && withoutZeros(food.upc) === withoutZeros(code)) || null;
+  }
+
+  return { search, findByBarcode, FoodSearchError };
 })();
