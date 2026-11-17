@@ -4747,60 +4747,41 @@ input[type="range"] {
 }
 
 /* ----- Color wipe between pages (js/pageWipe.js) -----
-   Leaving: a circle grows from the tapped tab. Arriving: the page starts
-   covered in the same color, which fades. Both sit under the header and tab bar. */
-.page-wipe,
+   A new page opened from the tab bar starts covered in its color, which then
+   shrinks into a circle on the tab that was tapped. It sits under the header
+   and tab bar. */
+html[data-wipe="home"] {
+  --wipe-color: var(--rpe);
+}
+
+html[data-wipe="workouts"] {
+  --wipe-color: var(--load);
+}
+
+html[data-wipe="calories"] {
+  --wipe-color: var(--calories);
+}
+
+html[data-wipe="streak"] {
+  --wipe-color: var(--streak);
+}
+
 html[data-wipe] body::after {
+  content: "";
   position: fixed;
   inset: 0;
   z-index: 9;
   pointer-events: none;
   background: var(--wipe-color);
+  clip-path: circle(150vmax at var(--wipe-x) var(--wipe-y));
 }
 
-.page-wipe[data-page="home"],
-html[data-wipe="home"] {
-  --wipe-color: var(--rpe);
+html[data-wipe-shrinking] body::after {
+  animation: page-wipe-shrink 340ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-.page-wipe[data-page="workouts"],
-html[data-wipe="workouts"] {
-  --wipe-color: var(--load);
-}
-
-.page-wipe[data-page="calories"],
-html[data-wipe="calories"] {
-  --wipe-color: var(--calories);
-}
-
-.page-wipe[data-page="streak"],
-html[data-wipe="streak"] {
-  --wipe-color: var(--streak);
-}
-
-.page-wipe {
-  animation: page-wipe-grow var(--wipe-ms) cubic-bezier(0.4, 0, 0.2, 1) both;
-}
-
-@keyframes page-wipe-grow {
-  from {
+@keyframes page-wipe-shrink {
+  to {
     clip-path: circle(0 at var(--wipe-x) var(--wipe-y));
-  }
-  to {
-    clip-path: circle(150vmax at var(--wipe-x) var(--wipe-y));
-  }
-}
-
-html[data-wipe] body::after {
-  content: "";
-}
-
-html[data-wipe-clearing] body::after {
-  animation: page-wipe-clear 260ms ease-out forwards;
-}
-
-@keyframes page-wipe-clear {
-  to {
-    opacity: 0;
   }
 }

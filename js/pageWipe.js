@@ -1,18 +1,18 @@
-// Color wipe between pages: tapping a tab grows a circle in that page's color
-// from the tab until it fills the screen, then the new page opens already
-// covered in that color, which fades away. The header and tab bar stay on top
-// the whole time. Skipped when the phone has Reduce Motion turned on.
+// Color wipe between pages: tapping a tab opens that page right away, covered
+// in the page's color, and the color shrinks into a circle on the tab you
+// tapped to show the page. Nothing waits before the new page starts loading.
+// The header and tab bar stay on top the whole time. Skipped when the phone
+// has Reduce Motion turned on.
 //
 // Loaded in each page's <head>, so the color is in place before the new page
-// is drawn and it never flashes.
+// is drawn and the page never flashes before it.
 const PageWipe = (() => {
   const STORAGE_KEY = "workoutTracker.pageWipe";
   // A wipe saved longer ago than this belongs to some other visit; ignore it.
   const MAX_AGE_MS = 5000;
-  const GROW_MS = 320;
-  // The fade's length is set in styles.css (page-wipe-clear); keep them equal.
-  const CLEAR_MS = 260;
-  const CLEAR_DELAY_MS = 30;
+  // The shrink's length is set in styles.css (page-wipe-shrink); keep them equal.
+  const SHRINK_MS = 340;
+  const START_DELAY_MS = 30;
   // Each tab's page, matching the Home tile colors in styles.css.
   const PAGES = {
     "index.html": "home",
@@ -37,49 +37,42 @@ const PageWipe = (() => {
     try {
       const saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY));
       sessionStorage.removeItem(STORAGE_KEY);
-      return saved && Date.now() - saved.at < MAX_AGE_MS ? saved.page : null;
+      return saved && Date.now() - saved.at < MAX_AGE_MS ? saved : null;
     } catch {
       return null;
     }
   }
 
-  function saveWipe(page) {
-    try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ page, at: Date.now() }));
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  // ----- Arriving: start covered, then fade the color away -----
-
-  function clearArrivingWipe() {
+  function clearWipe() {
     delete root.dataset.wipe;
-    delete root.dataset.wipeClearing;
+    delete root.dataset.wipeShrinking;
   }
 
-  const arrivingPage = readSavedWipe();
-  if (arrivingPage && !reduceMotion()) {
-    root.dataset.wipe = arrivingPage;
+  // ----- Arriving: start covered, then shrink the color onto the tapped tab -----
+
+  const arriving = readSavedWipe();
+  if (arriving && !reduceMotion()) {
+    root.dataset.wipe = arriving.page;
+    root.style.setProperty("--wipe-x", `${arriving.x}px`);
+    root.style.setProperty("--wipe-y", `${arriving.y}px`);
     document.addEventListener("DOMContentLoaded", () => {
-      // A moment for the page to be drawn under the color before it fades.
+      // A moment for the page to be drawn under the color before it shrinks.
       setTimeout(() => {
-        root.dataset.wipeClearing = "";
-      }, CLEAR_DELAY_MS);
-      // Never leave the page covered, even if the fade doesn't run.
-      setTimeout(clearArrivingWipe, CLEAR_DELAY_MS + CLEAR_MS + 400);
+        root.dataset.wipeShrinking = "";
+      }, START_DELAY_MS);
+      // Never leave the page covered, even if the animation doesn't run.
+      setTimeout(clearWipe, START_DELAY_MS + SHRINK_MS + 400);
     });
     document.addEventListener("animationend", (event) => {
-      if (event.target === document.body && event.animationName === "page-wipe-clear") {
-        clearArrivingWipe();
+      if (event.target === document.body && event.animationName === "page-wipe-shrink") {
+        clearWipe();
       }
     });
   }
 
-  // ----- Leaving: grow a circle from the tapped tab, then go -----
+  // ----- Leaving: note which tab was tapped, and let the page load as usual -----
 
-  function startWipe(event) {
+  document.addEventListener("click", (event) => {
     const link = event.target.closest(".tab-bar a[href]");
     const isPlainClick =
       event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
@@ -87,34 +80,33 @@ const PageWipe = (() => {
       return;
     }
     const page = pageFor(link.href);
-    if (!page || !saveWipe(page)) {
+    if (!page) {
       return;
     }
-    event.preventDefault();
     const tab = link.getBoundingClientRect();
-    const circle = document.createElement("div");
-    circle.className = "page-wipe";
-    circle.dataset.page = page;
-    circle.style.setProperty("--wipe-x", `${tab.left + tab.width / 2}px`);
-    circle.style.setProperty("--wipe-y", `${tab.top + tab.height / 2}px`);
-    circle.style.setProperty("--wipe-ms", `${GROW_MS}ms`);
-    document.body.append(circle);
-    setTimeout(() => {
-      location.href = link.href;
-    }, GROW_MS);
-  }
-
-  document.addEventListener("click", startWipe);
-
-  // Coming back with the browser's Back button can show this page exactly as
-  // it was left, circle and all; clear it.
-  window.addEventListener("pageshow", (event) => {
-    if (event.persisted) {
-      readSavedWipe();
-      document.querySelectorAll(".page-wipe").forEach((circle) => circle.remove());
-      clearArrivingWipe();
+    try {
+      sessionStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          page,
+          x: Math.round(tab.left + tab.width / 2),
+          y: Math.round(tab.top + tab.height / 2),
+          at: Date.now(),
+        }),
+      );
+    } catch {
+      // Without storage the page just opens without the wipe.
     }
   });
 
-  return { pageFor, GROW_MS };
+  // Coming back with the browser's Back button can show a page exactly as it
+  // was left; make sure no color is left on it.
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) {
+      readSavedWipe();
+      clearWipe();
+    }
+  });
+
+  return { pageFor };
 })();
