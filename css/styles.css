@@ -1236,7 +1236,9 @@ input[aria-invalid="true"] {
 
 .set-row {
   display: grid;
-  grid-template-columns: 26px 44px minmax(0, 1fr) minmax(0, 1fr) 36px 24px 46px;
+  /* The weight box gets a bit more room than reps, so 5-character weights
+     like 142.9 fit at phone width. */
+  grid-template-columns: 26px 44px minmax(0, 1.25fr) minmax(0, 1fr) 36px 24px 46px;
   align-items: center;
   gap: 4px;
   padding: 4px;
@@ -1302,7 +1304,7 @@ input[aria-invalid="true"] {
   text-align: center;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  padding: 8px 4px;
+  padding: 8px 2px;
 }
 
 /* Last time's RPE, after its reps. */
