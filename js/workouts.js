@@ -1363,10 +1363,16 @@
   function renderPremade() {
     premadeList.replaceChildren(
       ...PREMADE_PROGRAMS.map((program) =>
+        // Each program is one row that opens to show its days, so the list stays short.
         el(
-          "section",
+          "details",
           { class: "premade-program" },
-          el("h3", {}, program.name),
+          el(
+            "summary",
+            {},
+            el("span", { class: "premade-name" }, program.name),
+            el("span", { class: "premade-count" }, UI.plural(program.days.length, "day")),
+          ),
           el("p", { class: "muted premade-description" }, program.description),
           ...program.days.map((day) =>
             el(

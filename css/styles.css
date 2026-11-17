@@ -1505,17 +1505,65 @@ input[aria-invalid="true"] {
 
 .premade-list {
   display: grid;
-  gap: 20px;
+  gap: 8px;
 }
 
-.premade-program h3 {
-  margin: 0 0 4px;
-  font-size: 1.1rem;
+.premade-program {
+  border-radius: 14px;
+  background: var(--surface-muted);
+}
+
+.premade-program summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 12px 14px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.premade-program summary::-webkit-details-marker {
+  display: none;
+}
+
+.premade-name {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.premade-count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+/* A chevron that turns down when the program is open. */
+.premade-program summary::after {
+  content: "›";
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+
+.premade-program[open] summary::after {
+  transform: rotate(90deg);
+}
+
+.premade-program[open] {
+  padding-bottom: 6px;
 }
 
 .premade-description {
-  margin: 0 0 10px;
+  margin: 0 14px 10px;
   font-size: 0.85rem;
+}
+
+.premade-program .premade-day {
+  margin: 8px 8px 0;
+  background: var(--surface);
 }
 
 .premade-day {
