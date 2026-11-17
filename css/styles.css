@@ -4745,3 +4745,62 @@ input[type="range"] {
 .scan-form .button {
   white-space: nowrap;
 }
+
+/* ----- Color wipe between pages (js/pageWipe.js) -----
+   Leaving: a circle grows from the tapped tab. Arriving: the page starts
+   covered in the same color, which fades. Both sit under the header and tab bar. */
+.page-wipe,
+html[data-wipe] body::after {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  background: var(--wipe-color);
+}
+
+.page-wipe[data-page="home"],
+html[data-wipe="home"] {
+  --wipe-color: var(--rpe);
+}
+
+.page-wipe[data-page="workouts"],
+html[data-wipe="workouts"] {
+  --wipe-color: var(--load);
+}
+
+.page-wipe[data-page="calories"],
+html[data-wipe="calories"] {
+  --wipe-color: var(--calories);
+}
+
+.page-wipe[data-page="streak"],
+html[data-wipe="streak"] {
+  --wipe-color: var(--streak);
+}
+
+.page-wipe {
+  animation: page-wipe-grow var(--wipe-ms) cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes page-wipe-grow {
+  from {
+    clip-path: circle(0 at var(--wipe-x) var(--wipe-y));
+  }
+  to {
+    clip-path: circle(150vmax at var(--wipe-x) var(--wipe-y));
+  }
+}
+
+html[data-wipe] body::after {
+  content: "";
+}
+
+html[data-wipe-clearing] body::after {
+  animation: page-wipe-clear 260ms ease-out forwards;
+}
+
+@keyframes page-wipe-clear {
+  to {
+    opacity: 0;
+  }
+}
