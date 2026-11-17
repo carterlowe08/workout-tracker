@@ -2074,6 +2074,90 @@ input[aria-invalid="true"] {
   color: var(--text-muted);
 }
 
+/* Restaurants tab: pick a chain, then an item from its menu */
+
+#panel-restaurants input[type="search"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.restaurant-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.restaurant-row .row-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.restaurant-badge {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.restaurant-calories {
+  flex-shrink: 0;
+  color: var(--calories);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.restaurant-menu {
+  display: grid;
+  gap: 8px;
+}
+
+.restaurant-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.restaurant-heading h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.restaurant-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.menu-categories {
+  margin-bottom: 0;
+}
+
+.meal-time-switch {
+  grid-auto-columns: auto;
+  margin-bottom: 0;
+}
+
+.meal-time-switch .tab {
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.restaurant-menu .search-status:empty {
+  display: none;
+}
+
+.restaurant-source {
+  margin: 12px 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 /* Nutrition plan page */
 
 .back-link,

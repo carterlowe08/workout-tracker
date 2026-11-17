@@ -47,6 +47,10 @@
   const manualPanel = document.getElementById("panel-manual");
   const tabs = {
     search: { tab: searchTab, panel: searchPanel },
+    restaurants: {
+      tab: document.getElementById("tab-restaurants"),
+      panel: document.getElementById("panel-restaurants"),
+    },
     scan: { tab: document.getElementById("tab-scan"), panel: document.getElementById("panel-scan") },
     manual: { tab: manualTab, panel: manualPanel },
   };
@@ -484,6 +488,233 @@
     }
   }
 
+  // ----- Restaurants tab: pick a chain, then an item from its menu -----
+
+  const restaurants = Restaurants.load(RESTAURANT_MENUS);
+  const MAX_SERVINGS = 20;
+  const restaurantPick = document.getElementById("restaurant-pick");
+  const restaurantQuery = document.getElementById("restaurant-query");
+  const restaurantStatus = document.getElementById("restaurant-status");
+  const restaurantList = document.getElementById("restaurant-list");
+  const restaurantMenu = document.getElementById("restaurant-menu");
+  const restaurantBadge = document.getElementById("restaurant-badge");
+  const restaurantName = document.getElementById("restaurant-name");
+  const restaurantNote = document.getElementById("restaurant-note");
+  const menuQuery = document.getElementById("menu-query");
+  const mealTimeSwitch = document.getElementById("meal-time-switch");
+  const menuCategories = document.getElementById("menu-categories");
+  const menuStatus = document.getElementById("menu-status");
+  const menuItems = document.getElementById("menu-items");
+  const restaurantItem = document.getElementById("restaurant-item");
+  const restaurantItemBack = document.getElementById("restaurant-item-back");
+  const restaurantItemName = document.getElementById("restaurant-item-name");
+  const restaurantItemPlace = document.getElementById("restaurant-item-place");
+  const servingsInput = document.getElementById("restaurant-servings");
+  const servingsError = document.getElementById("restaurant-servings-error");
+  const restaurantPreview = document.getElementById("restaurant-preview");
+  const restaurantAddButton = document.getElementById("restaurant-add-button");
+  let openRestaurant = null;
+  let menuMealTime = "all";
+  let menuCategory = Restaurants.ALL_CATEGORIES;
+  let selectedMenuItem = null;
+
+  function badgeFor(restaurant, element = el("span", { class: "restaurant-badge", "aria-hidden": "true" })) {
+    element.textContent = restaurant.initials;
+    element.style.background = restaurant.color;
+    element.style.color = restaurant.textColor;
+    return element;
+  }
+
+  function showRestaurantView(view) {
+    restaurantPick.hidden = view !== "pick";
+    restaurantMenu.hidden = view !== "menu";
+    restaurantItem.hidden = view !== "item";
+  }
+
+  function renderRestaurantList() {
+    const query = restaurantQuery.value.trim();
+    const found = Restaurants.find(restaurants, query, activeMeal.id);
+    restaurantStatus.textContent =
+      found.length === 0
+        ? `No restaurant called “${query}” yet. Try the Search or Manual tab.`
+        : query
+          ? ""
+          : "Pick a restaurant to see its menu.";
+    restaurantList.replaceChildren(
+      ...found.map((restaurant) =>
+        el(
+          "li",
+          {},
+          el(
+            "button",
+            { type: "button", class: "food-result restaurant-row", onclick: () => openMenu(restaurant) },
+            badgeFor(restaurant),
+            el(
+              "span",
+              { class: "row-text" },
+              el("span", { class: "row-title" }, restaurant.name),
+              el(
+                "span",
+                { class: "row-meta" },
+                `${UI.plural(restaurant.items.length, "item")} · ${Restaurants.categories(restaurant).join(", ")}`,
+              ),
+            ),
+            el("span", { class: "row-meta", "aria-hidden": "true" }, "›"),
+          ),
+        ),
+      ),
+    );
+  }
+
+  function showRestaurantPicker() {
+    openRestaurant = null;
+    showRestaurantView("pick");
+    renderRestaurantList();
+    restaurantQuery.focus();
+  }
+
+  function renderMenuItems() {
+    const query = menuQuery.value.trim();
+    const items = Restaurants.menuItems(openRestaurant, { mealTime: menuMealTime, category: menuCategory, query });
+    const otherMealTime = menuMealTime === "all" ? "" : " Try All for the whole menu.";
+    menuStatus.textContent = items.length === 0 ? `Nothing on this menu matches “${query}”.${otherMealTime}` : "";
+    menuItems.replaceChildren(
+      ...items.map((item) =>
+        el(
+          "li",
+          {},
+          el(
+            "button",
+            { type: "button", class: "food-result restaurant-row", onclick: () => selectMenuItem(item) },
+            el(
+              "span",
+              { class: "row-text" },
+              el("span", { class: "row-title" }, item.name),
+              el("span", { class: "row-meta" }, macroLine(item)),
+            ),
+            el("span", { class: "restaurant-calories" }, `${UI.formatNumber(item.calories)} cal`),
+          ),
+        ),
+      ),
+    );
+  }
+
+  function renderMenuCategories() {
+    menuCategories.replaceChildren(
+      ...[Restaurants.ALL_CATEGORIES, ...Restaurants.categories(openRestaurant, menuMealTime)].map((category) =>
+        el(
+          "button",
+          {
+            type: "button",
+            class: "chip",
+            "aria-pressed": String(category === menuCategory),
+            onclick: () => {
+              menuCategory = category;
+              renderMenuCategories();
+              renderMenuItems();
+            },
+          },
+          category,
+        ),
+      ),
+    );
+  }
+
+  // Breakfast / Lunch & Dinner / All, shown only for chains with a breakfast menu.
+  function renderMealTimeSwitch() {
+    mealTimeSwitch.hidden = !Restaurants.servesBreakfast(openRestaurant);
+    mealTimeSwitch.replaceChildren(
+      ...Restaurants.MEAL_TIMES.map(({ id, label }) =>
+        el(
+          "button",
+          {
+            type: "button",
+            class: "tab",
+            role: "radio",
+            "aria-checked": String(id === menuMealTime),
+            onclick: () => {
+              menuMealTime = id;
+              menuCategory = Restaurants.ALL_CATEGORIES;
+              renderMealTimeSwitch();
+              renderMenuCategories();
+              renderMenuItems();
+            },
+          },
+          label,
+        ),
+      ),
+    );
+  }
+
+  function openMenu(restaurant) {
+    openRestaurant = restaurant;
+    menuMealTime = Restaurants.mealTimeFor(activeMeal.id, restaurant);
+    menuCategory = Restaurants.ALL_CATEGORIES;
+    renderMealTimeSwitch();
+    badgeFor(restaurant, restaurantBadge);
+    restaurantName.textContent = restaurant.name;
+    restaurantNote.textContent = restaurant.note || "";
+    restaurantNote.hidden = !restaurant.note;
+    menuQuery.value = "";
+    menuQuery.placeholder = `Search ${restaurant.name}`;
+    restaurantItemBack.textContent = `← ${restaurant.name} menu`;
+    renderMenuCategories();
+    renderMenuItems();
+    showRestaurantView("menu");
+    menuItems.scrollTop = 0;
+  }
+
+  function selectedServings() {
+    const servings = Number(servingsInput.value);
+    return servingsInput.value !== "" && servings > 0 && servings <= MAX_SERVINGS ? servings : null;
+  }
+
+  function updateRestaurantPreview() {
+    const servings = selectedServings();
+    servingsError.textContent = servings === null ? `Enter servings above 0 (up to ${MAX_SERVINGS}).` : "";
+    servingsInput.setAttribute("aria-invalid", servings === null ? "true" : "false");
+    restaurantAddButton.disabled = servings === null;
+    const nutrition = Restaurants.nutritionFor(selectedMenuItem, servings || 0);
+    restaurantPreview.replaceChildren(
+      el("div", {}, el("strong", {}, UI.formatNumber(nutrition.calories)), el("span", {}, "cal")),
+      ...MACROS.map(({ field, label }) =>
+        el("div", {}, el("strong", {}, `${UI.formatNumber(nutrition[field])} g`), el("span", {}, label)),
+      ),
+    );
+  }
+
+  function selectMenuItem(item) {
+    selectedMenuItem = item;
+    restaurantItemName.textContent = item.name;
+    restaurantItemPlace.textContent = `${openRestaurant.name} · ${item.category}`;
+    servingsInput.value = "1";
+    showRestaurantView("item");
+    updateRestaurantPreview();
+  }
+
+  function addMenuItem() {
+    const servings = selectedServings();
+    if (servings === null) {
+      updateRestaurantPreview();
+      return;
+    }
+    addEntry({
+      id: Date.now(),
+      date: UI.todayKey(),
+      meal: activeMeal.id,
+      name: `${openRestaurant.name} ${selectedMenuItem.name}`,
+      amount: Restaurants.servingsLabel(servings),
+      ...Restaurants.nutritionFor(selectedMenuItem, servings),
+    });
+  }
+
+  restaurantQuery.addEventListener("input", renderRestaurantList);
+  menuQuery.addEventListener("input", renderMenuItems);
+  document.getElementById("restaurant-back").addEventListener("click", showRestaurantPicker);
+  restaurantItemBack.addEventListener("click", () => showRestaurantView("menu"));
+  servingsInput.addEventListener("input", updateRestaurantPreview);
+  restaurantAddButton.addEventListener("click", addMenuItem);
+
   // ----- Scan tab -----
 
   const scanVideo = document.getElementById("scan-video");
@@ -620,6 +851,10 @@
     dialogTitle.textContent = `Add to ${meal.name}`;
     addButton.textContent = `Add to ${meal.name}`;
     manualAddButton.textContent = `Add to ${meal.name}`;
+    restaurantAddButton.textContent = `Add to ${meal.name}`;
+    restaurantQuery.value = "";
+    showRestaurantView("pick");
+    renderRestaurantList();
     manualNameError.textContent = "";
     manualError.textContent = "";
     queryInput.value = "";
@@ -630,6 +865,12 @@
   }
 
   searchTab.addEventListener("click", () => showTab("search"));
+  tabs.restaurants.tab.addEventListener("click", () => {
+    showTab("restaurants");
+    if (!restaurantPick.hidden) {
+      restaurantQuery.focus();
+    }
+  });
   tabs.scan.tab.addEventListener("click", () => showTab("scan"));
   manualTab.addEventListener("click", () => {
     showTab("manual");

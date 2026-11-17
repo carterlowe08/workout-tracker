@@ -4,14 +4,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Calories · Sisu</title>
-    <link rel="stylesheet" href="css/styles.css?v=f498279" />
-    <script src="js/storage.js?v=f498279"></script>
-    <script src="js/theme.js?v=f498279"></script>
-    <script src="js/colorMenu.js?v=f498279"></script>
-    <script src="js/headerColor.js?v=f498279"></script>
-    <script src="js/tileColors.js?v=f498279"></script>
-    <script src="js/tabBarColor.js?v=f498279"></script>
-    <script src="js/pageWipe.js?v=f498279"></script>
+    <link rel="stylesheet" href="css/styles.css?v=f9d02ee" />
+    <script src="js/storage.js?v=f9d02ee"></script>
+    <script src="js/theme.js?v=f9d02ee"></script>
+    <script src="js/colorMenu.js?v=f9d02ee"></script>
+    <script src="js/headerColor.js?v=f9d02ee"></script>
+    <script src="js/tileColors.js?v=f9d02ee"></script>
+    <script src="js/tabBarColor.js?v=f9d02ee"></script>
+    <script src="js/pageWipe.js?v=f9d02ee"></script>
   </head>
   <body>
     <nav class="tab-bar" aria-label="Main">
@@ -195,8 +195,48 @@
       </div>
       <div class="tabs" role="tablist">
         <button type="button" role="tab" class="tab" id="tab-search" aria-selected="true" aria-controls="panel-search">Search</button>
+        <button type="button" role="tab" class="tab" id="tab-restaurants" aria-selected="false" aria-controls="panel-restaurants">Restaurants</button>
         <button type="button" role="tab" class="tab" id="tab-scan" aria-selected="false" aria-controls="panel-scan">Scan</button>
         <button type="button" role="tab" class="tab" id="tab-manual" aria-selected="false" aria-controls="panel-manual">Manual</button>
+      </div>
+
+      <div role="tabpanel" id="panel-restaurants" aria-labelledby="tab-restaurants" hidden>
+        <div id="restaurant-pick">
+          <label class="visually-hidden" for="restaurant-query">Search restaurants</label>
+          <input id="restaurant-query" type="search" maxlength="60" placeholder="Search restaurants, e.g. McDonalds" autocomplete="off" />
+          <p class="search-status" id="restaurant-status" aria-live="polite"></p>
+          <ul class="list food-results" id="restaurant-list"></ul>
+        </div>
+
+        <div class="restaurant-menu" id="restaurant-menu" hidden>
+          <button type="button" class="back-button" id="restaurant-back">← All restaurants</button>
+          <div class="restaurant-heading">
+            <span class="restaurant-badge" id="restaurant-badge" aria-hidden="true"></span>
+            <h3 id="restaurant-name"></h3>
+          </div>
+          <p class="restaurant-note" id="restaurant-note" hidden></p>
+          <label class="visually-hidden" for="menu-query">Search this menu</label>
+          <input id="menu-query" type="search" maxlength="60" autocomplete="off" />
+          <div class="tabs meal-time-switch" id="meal-time-switch" role="radiogroup" aria-label="Menu for"></div>
+          <div class="chips chip-scroll menu-categories" id="menu-categories" role="group" aria-label="Menu category"></div>
+          <p class="search-status" id="menu-status" aria-live="polite"></p>
+          <ul class="list food-results" id="menu-items"></ul>
+        </div>
+
+        <div class="food-detail" id="restaurant-item" hidden>
+          <button type="button" class="back-button" id="restaurant-item-back">← Back to menu</button>
+          <p class="row-title" id="restaurant-item-name"></p>
+          <p class="row-meta" id="restaurant-item-place"></p>
+          <label class="field">
+            Servings
+            <input id="restaurant-servings" type="number" inputmode="decimal" min="0.5" max="20" step="0.5" value="1" />
+          </label>
+          <span class="field-error" id="restaurant-servings-error"></span>
+          <div class="nutrition-preview" id="restaurant-preview"></div>
+          <button type="button" class="button" id="restaurant-add-button">Add</button>
+        </div>
+
+        <p class="restaurant-source">From each chain's published nutrition info. Menus change, so check the restaurant if a number looks off.</p>
       </div>
 
       <div role="tabpanel" id="panel-scan" aria-labelledby="tab-scan" hidden>
@@ -271,15 +311,17 @@
       </form>
     </dialog>
 
-    <script src="js/logic.js?v=f498279"></script>
-    <script src="js/ui.js?v=f498279"></script>
-    <script src="js/units.js?v=f498279"></script>
-    <script src="js/calories.js?v=f498279"></script>
-    <script src="js/water.js?v=f498279"></script>
-    <script src="js/weight.js?v=f498279"></script>
-    <script src="js/foodSearch.js?v=f498279"></script>
-    <script src="js/barcode.js?v=f498279"></script>
-    <script src="js/food.js?v=f498279"></script>
-    <script src="js/calorieBalance.js?v=f498279"></script>
+    <script src="js/logic.js?v=f9d02ee"></script>
+    <script src="js/ui.js?v=f9d02ee"></script>
+    <script src="js/units.js?v=f9d02ee"></script>
+    <script src="js/calories.js?v=f9d02ee"></script>
+    <script src="js/water.js?v=f9d02ee"></script>
+    <script src="js/weight.js?v=f9d02ee"></script>
+    <script src="js/foodSearch.js?v=f9d02ee"></script>
+    <script src="js/restaurantMenus.js?v=f9d02ee"></script>
+    <script src="js/restaurants.js?v=f9d02ee"></script>
+    <script src="js/barcode.js?v=f9d02ee"></script>
+    <script src="js/food.js?v=f9d02ee"></script>
+    <script src="js/calorieBalance.js?v=f9d02ee"></script>
   </body>
 </html>
