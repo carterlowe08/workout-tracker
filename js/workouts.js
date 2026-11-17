@@ -1412,6 +1412,30 @@
     );
   }
 
+  // Saves every day of a quiz plan as a routine (with last time's weights),
+  // replacing routines that have the same names once the person agrees.
+  async function savePlanRoutines(plan) {
+    const newRoutines = plan.days.map(premadeDayAsRoutine);
+    const newNames = new Set(newRoutines.map((routine) => routine.name.toLowerCase()));
+    const replaced = routines.filter((routine) => newNames.has(routine.name.toLowerCase()));
+    const question = `Replace your ${replaced.map((routine) => `"${routine.name}"`).join(", ")} ${
+      replaced.length === 1 ? "routine" : "routines"
+    } with the new ${replaced.length === 1 ? "one" : "ones"}?`;
+    if (replaced.length > 0 && !(await UI.ask(question, { confirmLabel: "Replace" }))) {
+      return false;
+    }
+    const updated = [...newRoutines, ...routines.filter((routine) => !replaced.includes(routine))];
+    if (!Store.write(KEYS.routines, updated)) {
+      UI.showSaveError();
+      return false;
+    }
+    routines = updated;
+    renderRoutines();
+    showRoutineTab("mine");
+    UI.showToast(`Saved ${UI.plural(newRoutines.length, "routine")} from ${plan.program}`);
+    return true;
+  }
+
   async function saveRoutine() {
     const name = draft.name.trim() || `Workout on ${UI.formatDate(UI.todayKey())}`;
     const existing = routines.find((routine) => routine.name.toLowerCase() === name.toLowerCase());
@@ -1631,6 +1655,12 @@
   renderPremade();
   myRoutinesTab.addEventListener("click", () => showRoutineTab("mine"));
   premadeTab.addEventListener("click", () => showRoutineTab("premade"));
+  document.getElementById("quiz-open").addEventListener("click", () =>
+    ProgramQuizSheet.open({
+      onStart: (plan) => startRoutine(premadeDayAsRoutine(plan.days[0])),
+      onSave: savePlanRoutines,
+    }),
+  );
   // New users have no routines of their own yet, so start them on the premade ones.
   showRoutineTab(routines.length > 0 ? "mine" : "premade");
   // Keep the duration and calorie estimate current while a workout is going.
