@@ -23,21 +23,29 @@ const Restaurants = (() => {
 
   // Turns the compact item arrays into objects the screens can use. Each item
   // gets its meal time from its category: "breakfast", "anytime" or
-  // "lunch-dinner" (the default).
+  // "lunch-dinner" (the default). Dining hall items also carry the hall's own
+  // serving size ("Patty", "1/2 Cup") and may set their meal time directly,
+  // since one station serves breakfast and dinner.
   function load(menus) {
     return menus.map((restaurant) => ({
       ...restaurant,
-      items: restaurant.items.map(([name, category, calories, protein, carbs, fat], index) => ({
+      items: restaurant.items.map(([name, category, calories, protein, carbs, fat, serving, mealTime], index) => ({
         id: `${restaurant.id}-${index}`,
         name,
         category,
-        mealTime: (restaurant.mealTimes || {})[category] || "lunch-dinner",
+        mealTime: mealTime || (restaurant.mealTimes || {})[category] || "lunch-dinner",
+        serving: serving || "",
         calories,
         protein,
         carbs,
         fat,
       })),
     }));
+  }
+
+  // Dining halls open on a grid of stations instead of a list of items.
+  function usesStations(restaurant) {
+    return restaurant.layout === "stations";
   }
 
   function servesBreakfast(restaurant) {
@@ -91,6 +99,16 @@ const Restaurants = (() => {
     return [...new Set(shown.map((item) => item.category))];
   }
 
+  // The stations serving something at this meal time, with what each serves
+  // and how many of its items are on the menu then.
+  function stations(restaurant, mealTime = "all") {
+    return categories(restaurant, mealTime).map((name) => ({
+      name,
+      blurb: (restaurant.stationBlurbs || {})[name] || "",
+      count: menuItems(restaurant, { mealTime, category: name }).length,
+    }));
+  }
+
   // Menu items at a meal time, in a category ("All" for every one), whose
   // name contains the query.
   function menuItems(restaurant, { mealTime = "all", category = ALL_CATEGORIES, query = "" } = {}) {
@@ -124,9 +142,11 @@ const Restaurants = (() => {
     normalize,
     load,
     servesBreakfast,
+    usesStations,
     mealTimeFor,
     find,
     categories,
+    stations,
     menuItems,
     nutritionFor,
     servingsLabel,

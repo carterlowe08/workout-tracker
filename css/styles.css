@@ -2152,6 +2152,121 @@ input[aria-invalid="true"] {
   display: none;
 }
 
+/* Dining halls: a grid of stations, then items with a + to log one serving */
+
+.station-heading {
+  margin: 4px 0 0;
+  font-size: 1rem;
+}
+
+.station-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.station-card {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  padding: 14px;
+  border: none;
+  border-radius: 18px;
+  background: var(--surface-muted);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.station-card:hover {
+  background: var(--surface-raised);
+}
+
+.station-card strong {
+  font-size: 0.95rem;
+}
+
+.station-count {
+  margin-top: 2px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--calories);
+}
+
+.quick-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.quick-add-row .quick-add-name {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  border-bottom: none;
+}
+
+.quick-add-count {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--calories);
+  color: #000;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.quick-add-button {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: 1.4rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.quick-add-button:active {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.quick-added {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.quick-added-undo {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .restaurant-source {
   margin: 12px 0 0;
   font-size: 0.75rem;

@@ -296,15 +296,26 @@
     renderMeals();
   }
 
-  function addEntry(entry) {
+  // Saves a diary entry. Usually closes the sheet with a toast; quick add keeps
+  // the sheet open so several items can be logged in a row.
+  function addEntry(entry, { keepOpen = false } = {}) {
     if (!saveFoodLog([...foodLog, entry])) {
       return false;
     }
     expandedMeals.add(entry.meal);
     renderAll();
-    dialog.close();
-    UI.showToast(`Added ${entry.name} to ${activeMeal.name}`);
+    if (!keepOpen) {
+      dialog.close();
+      UI.showToast(`Added ${entry.name} to ${activeMeal.name}`);
+    }
     return true;
+  }
+
+  // A unique id for a new entry, even when two are added in the same millisecond.
+  let lastEntryId = 0;
+  function newEntryId() {
+    lastEntryId = Math.max(Date.now(), lastEntryId + 1);
+    return lastEntryId;
   }
 
   async function deleteEntry(entry) {
@@ -489,8 +500,9 @@
   }
 
   // ----- Restaurants tab: pick a chain, then an item from its menu -----
+  // Dining halls come first in the list and open on their stations.
 
-  const restaurants = Restaurants.load(RESTAURANT_MENUS);
+  const restaurants = Restaurants.load([...DINING_HALL_MENUS, ...RESTAURANT_MENUS]);
   const MAX_SERVINGS = 20;
   const restaurantPick = document.getElementById("restaurant-pick");
   const restaurantQuery = document.getElementById("restaurant-query");
@@ -505,6 +517,11 @@
   const menuCategories = document.getElementById("menu-categories");
   const menuStatus = document.getElementById("menu-status");
   const menuItems = document.getElementById("menu-items");
+  const menuStationHeading = document.getElementById("menu-station-heading");
+  const menuStations = document.getElementById("menu-stations");
+  const quickAddedBar = document.getElementById("quick-added");
+  const quickAddedText = document.getElementById("quick-added-text");
+  const restaurantBack = document.getElementById("restaurant-back");
   const restaurantItem = document.getElementById("restaurant-item");
   const restaurantItemBack = document.getElementById("restaurant-item-back");
   const restaurantItemName = document.getElementById("restaurant-item-name");
@@ -517,6 +534,12 @@
   let menuMealTime = "all";
   let menuCategory = Restaurants.ALL_CATEGORIES;
   let selectedMenuItem = null;
+  // Dining halls: the open station (null shows the station grid), how many of
+  // each item were quick-added since the sheet opened, and the last quick add,
+  // which Undo removes.
+  let menuStation = null;
+  let quickAddCounts = new Map();
+  let lastQuickAdd = null;
 
   function badgeFor(restaurant, element = el("span", { class: "restaurant-badge", "aria-hidden": "true" })) {
     element.textContent = restaurant.initials;
@@ -556,7 +579,9 @@
               el(
                 "span",
                 { class: "row-meta" },
-                `${UI.plural(restaurant.items.length, "item")} · ${Restaurants.categories(restaurant).join(", ")}`,
+                Restaurants.usesStations(restaurant)
+                  ? `${restaurant.kind} · ${UI.plural(restaurant.items.length, "item")} · ${UI.plural(Restaurants.categories(restaurant).length, "station")}`
+                  : `${UI.plural(restaurant.items.length, "item")} · ${Restaurants.categories(restaurant).join(", ")}`,
               ),
             ),
             el("span", { class: "row-meta", "aria-hidden": "true" }, "›"),
@@ -575,6 +600,10 @@
 
   function renderMenuItems() {
     const query = menuQuery.value.trim();
+    if (Restaurants.usesStations(openRestaurant)) {
+      renderStationMenu(query);
+      return;
+    }
     const items = Restaurants.menuItems(openRestaurant, { mealTime: menuMealTime, category: menuCategory, query });
     const otherMealTime = menuMealTime === "all" ? "" : " Try All for the whole menu.";
     menuStatus.textContent = items.length === 0 ? `Nothing on this menu matches “${query}”.${otherMealTime}` : "";
@@ -597,6 +626,112 @@
         ),
       ),
     );
+  }
+
+  // Dining hall menu: the station grid, or one station's items (or search
+  // results across every station) with a + to log one serving right away.
+  function renderStationMenu(query) {
+    const showGrid = menuStation === null && query === "";
+    menuStations.hidden = !showGrid;
+    menuItems.hidden = showGrid;
+    menuStationHeading.hidden = menuStation === null;
+    menuStationHeading.textContent = menuStation || "";
+    restaurantBack.textContent = menuStation === null ? "← All restaurants" : `← ${openRestaurant.shortName} stations`;
+    if (showGrid) {
+      menuStatus.textContent = "";
+      menuStations.replaceChildren(
+        ...Restaurants.stations(openRestaurant, menuMealTime).map((station) =>
+          el(
+            "button",
+            {
+              type: "button",
+              class: "station-card",
+              onclick: () => {
+                menuStation = station.name;
+                renderMenuItems();
+              },
+            },
+            el("strong", {}, station.name),
+            el("span", { class: "row-meta" }, station.blurb),
+            el("span", { class: "station-count" }, UI.plural(station.count, "item")),
+          ),
+        ),
+      );
+      return;
+    }
+    const items = Restaurants.menuItems(openRestaurant, {
+      mealTime: menuMealTime,
+      category: menuStation || Restaurants.ALL_CATEGORIES,
+      query,
+    });
+    const otherMealTime = menuMealTime === "all" ? "" : " Try All for the whole menu.";
+    menuStatus.textContent =
+      items.length === 0
+        ? `Nothing ${menuStation ? `at ${menuStation}` : "on this menu"} matches “${query}”.${otherMealTime}`
+        : "";
+    menuItems.replaceChildren(...items.map(quickAddRow));
+  }
+
+  function quickAddRow(item) {
+    const added = quickAddCounts.get(item.id) || 0;
+    return el(
+      "li",
+      { class: "quick-add-row" },
+      el(
+        "button",
+        { type: "button", class: "food-result quick-add-name", onclick: () => selectMenuItem(item) },
+        el("span", { class: "row-title" }, item.name),
+        el(
+          "span",
+          { class: "row-meta" },
+          [menuStation ? null : item.category, item.serving, `${UI.formatNumber(item.calories)} cal`].filter(Boolean).join(" · "),
+        ),
+      ),
+      added ? el("span", { class: "quick-add-count", "aria-label": `${added} added` }, `×${added}`) : null,
+      el(
+        "button",
+        {
+          type: "button",
+          class: "quick-add-button",
+          "aria-label": `Add 1 serving of ${item.name} to ${activeMeal.name}`,
+          onclick: () => quickAdd(item),
+        },
+        "+",
+      ),
+    );
+  }
+
+  function quickAdd(item) {
+    const entry = menuEntry(item, 1);
+    if (!addEntry(entry, { keepOpen: true })) {
+      return;
+    }
+    quickAddCounts.set(item.id, (quickAddCounts.get(item.id) || 0) + 1);
+    lastQuickAdd = { entry, itemId: item.id };
+    quickAddedText.textContent = `Added ${item.name} to ${activeMeal.name}`;
+    quickAddedBar.hidden = false;
+    renderMenuItems();
+  }
+
+  function undoQuickAdd() {
+    if (!lastQuickAdd) {
+      return;
+    }
+    const { entry, itemId } = lastQuickAdd;
+    if (!saveFoodLog(foodLog.filter((item) => item.id !== entry.id))) {
+      return;
+    }
+    renderAll();
+    quickAddCounts.set(itemId, quickAddCounts.get(itemId) - 1);
+    lastQuickAdd = null;
+    quickAddedBar.hidden = true;
+    renderMenuItems();
+    UI.showToast(`Removed ${entry.name}`);
+  }
+
+  function hideQuickAdded() {
+    lastQuickAdd = null;
+    quickAddedBar.hidden = true;
   }
 
   function renderMenuCategories() {
@@ -635,6 +770,9 @@
             onclick: () => {
               menuMealTime = id;
               menuCategory = Restaurants.ALL_CATEGORIES;
+              if (menuStation && !Restaurants.categories(openRestaurant, id).includes(menuStation)) {
+                menuStation = null;
+              }
               renderMealTimeSwitch();
               renderMenuCategories();
               renderMenuItems();
@@ -657,7 +795,15 @@
     restaurantNote.hidden = !restaurant.note;
     menuQuery.value = "";
     menuQuery.placeholder = `Search ${restaurant.name}`;
-    restaurantItemBack.textContent = `← ${restaurant.name} menu`;
+    restaurantItemBack.textContent = `← ${restaurant.shortName || restaurant.name} menu`;
+    const stationLayout = Restaurants.usesStations(restaurant);
+    menuStation = null;
+    hideQuickAdded();
+    menuCategories.hidden = stationLayout;
+    menuStations.hidden = !stationLayout;
+    menuStationHeading.hidden = true;
+    menuItems.hidden = false;
+    restaurantBack.textContent = "← All restaurants";
     renderMenuCategories();
     renderMenuItems();
     showRestaurantView("menu");
@@ -686,7 +832,9 @@
   function selectMenuItem(item) {
     selectedMenuItem = item;
     restaurantItemName.textContent = item.name;
-    restaurantItemPlace.textContent = `${openRestaurant.name} · ${item.category}`;
+    restaurantItemPlace.textContent = [openRestaurant.name, item.category, item.serving && `1 serving = ${item.serving}`]
+      .filter(Boolean)
+      .join(" · ");
     servingsInput.value = "1";
     showRestaurantView("item");
     updateRestaurantPreview();
@@ -698,19 +846,36 @@
       updateRestaurantPreview();
       return;
     }
-    addEntry({
-      id: Date.now(),
+    addEntry(menuEntry(selectedMenuItem, servings));
+  }
+
+  function menuEntry(item, servings) {
+    return {
+      id: newEntryId(),
       date: UI.todayKey(),
       meal: activeMeal.id,
-      name: `${openRestaurant.name} ${selectedMenuItem.name}`,
+      name: `${openRestaurant.shortName || openRestaurant.name} ${item.name}`,
       amount: Restaurants.servingsLabel(servings),
-      ...Restaurants.nutritionFor(selectedMenuItem, servings),
-    });
+      ...Restaurants.nutritionFor(item, servings),
+    };
+  }
+
+  // Back from a station goes to the station grid; otherwise to the restaurant list.
+  function goBackFromMenu() {
+    if (Restaurants.usesStations(openRestaurant) && menuStation !== null) {
+      menuStation = null;
+      menuQuery.value = "";
+      renderMenuItems();
+      return;
+    }
+    hideQuickAdded();
+    showRestaurantPicker();
   }
 
   restaurantQuery.addEventListener("input", renderRestaurantList);
   menuQuery.addEventListener("input", renderMenuItems);
-  document.getElementById("restaurant-back").addEventListener("click", showRestaurantPicker);
+  restaurantBack.addEventListener("click", goBackFromMenu);
+  document.getElementById("quick-added-undo").addEventListener("click", undoQuickAdd);
   restaurantItemBack.addEventListener("click", () => showRestaurantView("menu"));
   servingsInput.addEventListener("input", updateRestaurantPreview);
   restaurantAddButton.addEventListener("click", addMenuItem);
@@ -853,6 +1018,8 @@
     manualAddButton.textContent = `Add to ${meal.name}`;
     restaurantAddButton.textContent = `Add to ${meal.name}`;
     restaurantQuery.value = "";
+    quickAddCounts = new Map();
+    hideQuickAdded();
     showRestaurantView("pick");
     renderRestaurantList();
     manualNameError.textContent = "";

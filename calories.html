@@ -4,14 +4,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Calories · Sisu</title>
-    <link rel="stylesheet" href="css/styles.css?v=f9d02ee" />
-    <script src="js/storage.js?v=f9d02ee"></script>
-    <script src="js/theme.js?v=f9d02ee"></script>
-    <script src="js/colorMenu.js?v=f9d02ee"></script>
-    <script src="js/headerColor.js?v=f9d02ee"></script>
-    <script src="js/tileColors.js?v=f9d02ee"></script>
-    <script src="js/tabBarColor.js?v=f9d02ee"></script>
-    <script src="js/pageWipe.js?v=f9d02ee"></script>
+    <link rel="stylesheet" href="css/styles.css?v=fd10164" />
+    <script src="js/storage.js?v=fd10164"></script>
+    <script src="js/theme.js?v=fd10164"></script>
+    <script src="js/colorMenu.js?v=fd10164"></script>
+    <script src="js/headerColor.js?v=fd10164"></script>
+    <script src="js/tileColors.js?v=fd10164"></script>
+    <script src="js/tabBarColor.js?v=fd10164"></script>
+    <script src="js/pageWipe.js?v=fd10164"></script>
   </head>
   <body>
     <nav class="tab-bar" aria-label="Main">
@@ -219,8 +219,14 @@
           <input id="menu-query" type="search" maxlength="60" autocomplete="off" />
           <div class="tabs meal-time-switch" id="meal-time-switch" role="radiogroup" aria-label="Menu for"></div>
           <div class="chips chip-scroll menu-categories" id="menu-categories" role="group" aria-label="Menu category"></div>
+          <h4 class="station-heading" id="menu-station-heading" hidden></h4>
+          <div class="station-grid" id="menu-stations" hidden></div>
           <p class="search-status" id="menu-status" aria-live="polite"></p>
           <ul class="list food-results" id="menu-items"></ul>
+          <div class="quick-added" id="quick-added" role="status" hidden>
+            <span id="quick-added-text"></span>
+            <button type="button" class="quick-added-undo" id="quick-added-undo">Undo</button>
+          </div>
         </div>
 
         <div class="food-detail" id="restaurant-item" hidden>
@@ -236,7 +242,7 @@
           <button type="button" class="button" id="restaurant-add-button">Add</button>
         </div>
 
-        <p class="restaurant-source">From each chain's published nutrition info. Menus change, so check the restaurant if a number looks off.</p>
+        <p class="restaurant-source">From each chain's and dining hall's published nutrition info. Menus change, so check the restaurant if a number looks off.</p>
       </div>
 
       <div role="tabpanel" id="panel-scan" aria-labelledby="tab-scan" hidden>
@@ -311,17 +317,18 @@
       </form>
     </dialog>
 
-    <script src="js/logic.js?v=f9d02ee"></script>
-    <script src="js/ui.js?v=f9d02ee"></script>
-    <script src="js/units.js?v=f9d02ee"></script>
-    <script src="js/calories.js?v=f9d02ee"></script>
-    <script src="js/water.js?v=f9d02ee"></script>
-    <script src="js/weight.js?v=f9d02ee"></script>
-    <script src="js/foodSearch.js?v=f9d02ee"></script>
-    <script src="js/restaurantMenus.js?v=f9d02ee"></script>
-    <script src="js/restaurants.js?v=f9d02ee"></script>
-    <script src="js/barcode.js?v=f9d02ee"></script>
-    <script src="js/food.js?v=f9d02ee"></script>
-    <script src="js/calorieBalance.js?v=f9d02ee"></script>
+    <script src="js/logic.js?v=fd10164"></script>
+    <script src="js/ui.js?v=fd10164"></script>
+    <script src="js/units.js?v=fd10164"></script>
+    <script src="js/calories.js?v=fd10164"></script>
+    <script src="js/water.js?v=fd10164"></script>
+    <script src="js/weight.js?v=fd10164"></script>
+    <script src="js/foodSearch.js?v=fd10164"></script>
+    <script src="js/restaurantMenus.js?v=fd10164"></script>
+    <script src="js/diningHallMenus.js?v=fd10164"></script>
+    <script src="js/restaurants.js?v=fd10164"></script>
+    <script src="js/barcode.js?v=fd10164"></script>
+    <script src="js/food.js?v=fd10164"></script>
+    <script src="js/calorieBalance.js?v=fd10164"></script>
   </body>
 </html>
