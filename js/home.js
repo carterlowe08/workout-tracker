@@ -124,11 +124,13 @@
   document.getElementById("week-summary").textContent =
     `Checked in ${checkedThisWeek} of ${weekGoal} days this week.${best > 0 ? ` Best streak ${UI.plural(best, "week")}.` : ""}`;
 
-  document.getElementById("progress-heading").textContent = `Progress, last 12 weeks (${unit})`;
+  document.getElementById("progress-range").textContent = `Last 12 weeks · ${unit}`;
 
   // ----- Progress chart: heaviest set per week for one exercise, or total weekly load -----
   const TOTAL_LOAD = "total-load";
-  const metricSelect = document.getElementById("progress-metric");
+  const metricButton = document.getElementById("progress-metric");
+  const metricName = document.getElementById("progress-metric-name");
+  const metricMenu = document.getElementById("progress-metric-menu");
   const chartContainer = document.getElementById("progress-chart");
   const summary = document.getElementById("progress-summary");
   const table = document.getElementById("progress-table");
@@ -201,7 +203,8 @@
   }
 
   function renderProgress() {
-    const metric = metricSelect.value;
+    const metric = currentMetric;
+    metricName.textContent = metric === TOTAL_LOAD ? "Total weekly load" : metric;
     const points = weeklySeries(metric).map(({ week, value }) => ({
       label: shortDate(week),
       longLabel: `Week of ${shortDate(week)}`,
@@ -220,12 +223,86 @@
     renderTable(points, metric);
   }
 
-  metricSelect.replaceChildren(
-    ...exerciseNames.map((name) => UI.el("option", { value: name }, `${name}: heaviest set`)),
-    UI.el("option", { value: TOTAL_LOAD }, "Total weekly load"),
-  );
-  metricSelect.value = exerciseNames[0] || TOTAL_LOAD;
-  metricSelect.addEventListener("change", renderProgress);
+  // The heading is the menu: tap it to pick an exercise or total load.
+  let currentMetric = exerciseNames[0] || TOTAL_LOAD;
+  const metrics = [...exerciseNames, TOTAL_LOAD];
+
+  function latestText(metric) {
+    const latest = WorkoutLogic.latestWeeklyValue(weeklySeries(metric));
+    return latest === null ? "" : formatWeight(inChosenUnit(latest, metric === TOTAL_LOAD ? 0 : 1));
+  }
+
+  function closeMetricMenu({ returnFocus = false } = {}) {
+    metricMenu.hidden = true;
+    metricButton.setAttribute("aria-expanded", "false");
+    if (returnFocus) {
+      metricButton.focus();
+    }
+  }
+
+  function openMetricMenu() {
+    metricMenu.replaceChildren(
+      ...metrics.map((metric) => {
+        const latest = latestText(metric);
+        return UI.el(
+          "button",
+          {
+            type: "button",
+            class: "title-menu-item",
+            role: "menuitemradio",
+            "aria-checked": String(metric === currentMetric),
+            "data-metric": metric,
+          },
+          UI.el(
+            "span",
+            {},
+            metric === TOTAL_LOAD ? "Total weekly load" : metric,
+            latest ? UI.el("span", { class: "title-menu-meta" }, ` · ${latest}`) : null,
+          ),
+          UI.el("span", { class: "title-menu-check", "aria-hidden": "true" }, "✓"),
+        );
+      }),
+    );
+    metricMenu.hidden = false;
+    metricButton.setAttribute("aria-expanded", "true");
+    metricMenu.querySelector('[aria-checked="true"]').focus();
+  }
+
+  metricButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (metricMenu.hidden) {
+      openMetricMenu();
+    } else {
+      closeMetricMenu();
+    }
+  });
+  metricMenu.addEventListener("click", (event) => {
+    const item = event.target.closest(".title-menu-item");
+    if (item) {
+      currentMetric = item.dataset.metric;
+      closeMetricMenu({ returnFocus: true });
+      renderProgress();
+    }
+  });
+  metricMenu.addEventListener("keydown", (event) => {
+    const items = [...metricMenu.querySelectorAll(".title-menu-item")];
+    const index = items.indexOf(document.activeElement);
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const step = event.key === "ArrowDown" ? 1 : -1;
+      items[(index + step + items.length) % items.length].focus();
+    }
+  });
+  document.addEventListener("click", (event) => {
+    if (!metricMenu.hidden && !metricMenu.contains(event.target)) {
+      closeMetricMenu();
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !metricMenu.hidden) {
+      closeMetricMenu({ returnFocus: true });
+    }
+  });
   // Redraw at the new width when the screen rotates or the window is resized.
   let resizeTimer;
   window.addEventListener("resize", () => {

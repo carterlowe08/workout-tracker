@@ -4,14 +4,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Sisu</title>
-    <link rel="stylesheet" href="css/styles.css?v=fd10164" />
-    <script src="js/storage.js?v=fd10164"></script>
-    <script src="js/theme.js?v=fd10164"></script>
-    <script src="js/colorMenu.js?v=fd10164"></script>
-    <script src="js/headerColor.js?v=fd10164"></script>
-    <script src="js/tileColors.js?v=fd10164"></script>
-    <script src="js/tabBarColor.js?v=fd10164"></script>
-    <script src="js/pageWipe.js?v=fd10164"></script>
+    <link rel="stylesheet" href="css/styles.css?v=22d130f" />
+    <script src="js/storage.js?v=22d130f"></script>
+    <script src="js/theme.js?v=22d130f"></script>
+    <script src="js/colorMenu.js?v=22d130f"></script>
+    <script src="js/headerColor.js?v=22d130f"></script>
+    <script src="js/tileColors.js?v=22d130f"></script>
+    <script src="js/tabBarColor.js?v=22d130f"></script>
+    <script src="js/pageWipe.js?v=22d130f"></script>
   </head>
   <body>
     <nav class="tab-bar" aria-label="Main">
@@ -81,14 +81,18 @@
 
       <section class="card goals-card" id="goals" aria-labelledby="goals-heading"></section>
 
-      <section class="card" aria-labelledby="progress-heading">
-        <div class="card-header">
-          <h2 id="progress-heading">Progress, last 12 weeks (lb)</h2>
+      <section class="card progress-card" aria-labelledby="progress-heading">
+        <div class="card-header progress-header">
+          <h2 id="progress-heading">
+            <span class="visually-hidden">Progress: </span>
+            <button type="button" class="title-menu-trigger" id="progress-metric" aria-haspopup="menu" aria-expanded="false" aria-controls="progress-metric-menu">
+              <span id="progress-metric-name"></span>
+              <svg class="title-menu-chevron" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+            </button>
+          </h2>
+          <span class="muted progress-range" id="progress-range"></span>
         </div>
-        <label class="field">
-          Show
-          <select id="progress-metric"></select>
-        </label>
+        <div class="title-menu" id="progress-metric-menu" role="menu" aria-label="Show on the chart" hidden></div>
         <p class="progress-summary" id="progress-summary"></p>
         <div id="progress-chart"></div>
         <table class="visually-hidden" id="progress-table"></table>
@@ -108,20 +112,20 @@
       </section>
     </main>
 
-    <script src="js/logic.js?v=fd10164"></script>
-    <script src="js/ui.js?v=fd10164"></script>
-    <script src="js/units.js?v=fd10164"></script>
-    <script src="js/lineChart.js?v=fd10164"></script>
-    <script src="js/home.js?v=fd10164"></script>
-    <script src="js/exerciseDatabase.js?v=fd10164"></script>
-    <script src="js/exercises.js?v=fd10164"></script>
-    <script src="js/muscleMap.js?v=fd10164"></script>
-    <script src="js/exerciseGuide.js?v=fd10164"></script>
-    <script src="js/exerciseHistory.js?v=fd10164"></script>
-    <script src="js/records.js?v=fd10164"></script>
-    <script src="js/weeklyRecap.js?v=fd10164"></script>
-    <script src="js/goalLogic.js?v=fd10164"></script>
-    <script src="js/goals.js?v=fd10164"></script>
-    <script src="js/backup.js?v=fd10164"></script>
+    <script src="js/logic.js?v=22d130f"></script>
+    <script src="js/ui.js?v=22d130f"></script>
+    <script src="js/units.js?v=22d130f"></script>
+    <script src="js/lineChart.js?v=22d130f"></script>
+    <script src="js/home.js?v=22d130f"></script>
+    <script src="js/exerciseDatabase.js?v=22d130f"></script>
+    <script src="js/exercises.js?v=22d130f"></script>
+    <script src="js/muscleMap.js?v=22d130f"></script>
+    <script src="js/exerciseGuide.js?v=22d130f"></script>
+    <script src="js/exerciseHistory.js?v=22d130f"></script>
+    <script src="js/records.js?v=22d130f"></script>
+    <script src="js/weeklyRecap.js?v=22d130f"></script>
+    <script src="js/goalLogic.js?v=22d130f"></script>
+    <script src="js/goals.js?v=22d130f"></script>
+    <script src="js/backup.js?v=22d130f"></script>
   </body>
 </html>

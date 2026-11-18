@@ -69,6 +69,16 @@ const WorkoutLogic = (() => {
     return weeks;
   }
 
+  // The value of the most recent week that has one, from weeklyValues(), or null.
+  function latestWeeklyValue(weeks) {
+    for (let index = weeks.length - 1; index >= 0; index -= 1) {
+      if (weeks[index].value !== null) {
+        return weeks[index].value;
+      }
+    }
+    return null;
+  }
+
   // The heaviest weight lifted for an exercise in one workout, or null.
   function heaviestSet(workout, exerciseName) {
     const name = exerciseName.toLowerCase();
@@ -1062,6 +1072,7 @@ const WorkoutLogic = (() => {
     workoutLoad,
     startOfWeek,
     weeklyValues,
+    latestWeeklyValue,
     heaviestSet,
     workoutMinutes,
     bestDayTotal,
