@@ -894,6 +894,44 @@ const WorkoutLogic = (() => {
     return exercises.filter((exercise) => exercise.supersetId === supersetId);
   }
 
+  // The workout's cards in order: a lone exercise, or every exercise in a
+  // superset, drawn where its first member sits.
+  function exerciseBlocks(exercises) {
+    const seenSupersets = new Set();
+    return exercises.flatMap((exercise) => {
+      if (!exercise.supersetId) {
+        return [[exercise]];
+      }
+      if (seenSupersets.has(exercise.supersetId)) {
+        return [];
+      }
+      seenSupersets.add(exercise.supersetId);
+      return [supersetMembers(exercises, exercise.supersetId)];
+    });
+  }
+
+  // A new list with the cards in the given order (old card positions, as from
+  // a drag), keeping each superset's members together and in their order.
+  function reorderBlocks(exercises, blockOrder) {
+    const blocks = exerciseBlocks(exercises);
+    const isPermutation =
+      blockOrder.length === blocks.length && [...blockOrder].sort((a, b) => a - b).every((block, index) => block === index);
+    return isPermutation ? blockOrder.flatMap((block) => blocks[block]) : exercises;
+  }
+
+  // ----- Unsaved workout -----
+  // How far along the workout being built is: for Home's Resume banner, and
+  // to keep the screen on once a set has been started.
+  function draftProgress(exercises) {
+    const sets = exercises.flatMap((exercise) => (Array.isArray(exercise.sets) ? exercise.sets : []));
+    return {
+      exerciseCount: exercises.length,
+      setsDone: sets.filter((set) => set.done).length,
+      setsTotal: sets.length,
+      started: sets.some((set) => set.startedAt || set.done),
+    };
+  }
+
   function supersetRoundCount(members) {
     return Math.max(...members.map((member) => member.sets.length));
   }
@@ -1133,6 +1171,9 @@ const WorkoutLogic = (() => {
     withoutLoneSupersets,
     linkExercises,
     supersetMembers,
+    exerciseBlocks,
+    reorderBlocks,
+    draftProgress,
     supersetRoundCount,
     nextInRound,
     nextUpSet,

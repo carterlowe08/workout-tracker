@@ -33,6 +33,16 @@
     day: "numeric",
   });
 
+  // ----- Resume banner: a workout left unsaved, shown in place of Start workout -----
+  const draftExercises = Store.read(Store.KEYS.draft, { exercises: [] }).exercises || [];
+  const draft = WorkoutLogic.draftProgress(draftExercises);
+  if (draft.exerciseCount > 0) {
+    document.getElementById("resume-detail").textContent =
+      `${UI.plural(draft.exerciseCount, "exercise")}, ${UI.plural(draft.setsDone, "set")} done`;
+    document.getElementById("resume-workout").hidden = false;
+    document.getElementById("start-workout").hidden = true;
+  }
+
   // ----- Load tile: today's load, a bar against the best day, and a 12-week sparkline -----
   const loadShareOfBest = bestLoadDay > 0 ? Math.min(loadToday / bestLoadDay, 1) : 0;
   document.getElementById("load-today").textContent = UI.formatNumber(inChosenUnit(loadToday));

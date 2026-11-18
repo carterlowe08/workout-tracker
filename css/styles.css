@@ -878,6 +878,39 @@ a.tile:focus-visible {
   text-decoration: none;
 }
 
+/* Resume on Home jumps here; leave room for the sticky header above it. */
+#draft-heading {
+  scroll-margin-top: 100px;
+}
+
+/* Home's banner for a workout left unsaved: title and progress, then Resume. */
+.resume-workout {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.resume-workout[hidden],
+.start-workout[hidden] {
+  display: none;
+}
+
+.resume-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.resume-action {
+  flex: none;
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: var(--tile-accent);
+  color: var(--tile);
+  font-weight: 800;
+}
+
 .stat-value {
   display: block;
   font-size: 1.75rem;
@@ -3550,6 +3583,72 @@ input[type="range"] {
 
 .superset-card {
   outline: 2px solid var(--rpe-tile);
+}
+
+/* Moving cards: a grip at the start of each card's name, shown when there are
+   two or more cards. While one is held, every card shrinks to its name. */
+.drag-handle {
+  display: none;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 36px;
+  margin-left: -6px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.can-reorder .drag-handle {
+  display: grid;
+}
+
+.drag-handle svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.can-reorder .superset-title .drag-handle {
+  display: inline-grid;
+  margin-right: 2px;
+  vertical-align: middle;
+}
+
+.reorder-only {
+  display: none;
+}
+
+.exercise-cards.reordering {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.exercise-cards.reordering .reorder-only {
+  display: inline;
+}
+
+.exercise-cards.reordering .exercise-card > :not(.exercise-card-header):not(.superset-title),
+.exercise-cards.reordering .exercise-card-header > :not(.exercise-name-line),
+.exercise-cards.reordering .link-exercise {
+  display: none;
+}
+
+.exercise-cards.reordering .exercise-card-header,
+.exercise-cards.reordering .superset-title {
+  margin: 0;
+}
+
+.exercise-card.dragging {
+  outline: 2px solid var(--load);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  cursor: grabbing;
 }
 
 .superset-title {

@@ -969,7 +969,13 @@
       el(
         "div",
         { class: "exercise-card-header" },
-        el("div", { class: "exercise-name-line" }, exerciseNameButton(exercise.name), linkButton(exercise)),
+        el(
+          "div",
+          { class: "exercise-name-line" },
+          exercise.supersetId ? null : dragHandle(exercise.name),
+          exerciseNameButton(exercise.name),
+          linkButton(exercise),
+        ),
         el("span", { class: "row-meta" }, setsDoneText(exercise)),
         el(
           "div",
@@ -1066,8 +1072,10 @@
       el(
         "p",
         { class: "superset-title" },
+        dragHandle(`the superset of ${members.map((member) => member.name).join(" and ")}`),
         "Superset",
         el("span", {}, ` · ${setsInCard.filter((set) => set.done).length}/${setsInCard.length} sets done`),
+        el("span", { class: "reorder-only" }, ` · ${members.map((member) => member.name).join(" + ")}`),
       ),
       members.map((member) => el("div", { class: "superset-member" }, exerciseHeader(member, memberIndex(member)))),
       setLabels(),
@@ -1118,22 +1126,158 @@
     );
   }
 
+  // ----- Moving cards: drag a card's handle, or use the arrow keys on it -----
+
+  // A small icon: six dots in two columns.
+  function gripIcon() {
+    const namespace = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(namespace, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    for (const [x, y] of [[9, 6], [15, 6], [9, 12], [15, 12], [9, 18], [15, 18]]) {
+      const dot = document.createElementNS(namespace, "circle");
+      dot.setAttribute("cx", x);
+      dot.setAttribute("cy", y);
+      dot.setAttribute("r", 1.8);
+      svg.append(dot);
+    }
+    return svg;
+  }
+
+  function dragHandle(label) {
+    const handle = el(
+      "button",
+      { type: "button", class: "drag-handle", "aria-label": `Move ${label}: drag, or use the up and down arrow keys` },
+      gripIcon(),
+    );
+    handle.addEventListener("pointerdown", startCardDrag);
+    handle.addEventListener("keydown", moveCardWithKeys);
+    return handle;
+  }
+
+  // Puts the cards in this order (their old positions). Returns whether anything moved.
+  function moveCards(blockOrder) {
+    const moved = WorkoutLogic.reorderBlocks(draft.exercises, blockOrder);
+    const changed = moved.some((exercise, index) => exercise !== draft.exercises[index]);
+    if (changed) {
+      RestTimer.followReorder(draft.exercises, moved);
+      draft.exercises = moved;
+      saveDraft();
+    }
+    renderDraft();
+    return changed;
+  }
+
+  function cardOrder() {
+    return [...draftList.children].map((card) => Number(card.dataset.block));
+  }
+
+  function moveCardWithKeys(event) {
+    const step = { ArrowUp: -1, ArrowDown: 1 }[event.key];
+    if (!step) {
+      return;
+    }
+    event.preventDefault();
+    const order = cardOrder();
+    const from = order.indexOf(Number(event.currentTarget.closest(".exercise-card").dataset.block));
+    const to = from + step;
+    if (to < 0 || to >= order.length) {
+      return;
+    }
+    [order[from], order[to]] = [order[to], order[from]];
+    moveCards(order);
+    draftList.children[to].querySelector(".drag-handle").focus();
+  }
+
+  // While dragging, every card shrinks to its name so the list is short, and
+  // the held card moves to wherever the finger is. The page scrolls near the edges.
+  function startCardDrag(event) {
+    if (event.pointerType === "mouse" && event.button !== 0) {
+      return;
+    }
+    event.preventDefault();
+    const card = event.currentTarget.closest(".exercise-card");
+    const topBefore = card.getBoundingClientRect().top;
+    draftList.classList.add("reordering");
+    card.classList.add("dragging");
+    // Keep the held card under the finger after the cards above it shrink.
+    window.scrollBy(0, card.getBoundingClientRect().top - topBefore);
+    let pointerY = event.clientY;
+
+    function placeCard() {
+      const before = [...draftList.children].find((other) => {
+        if (other === card) {
+          return false;
+        }
+        const box = other.getBoundingClientRect();
+        return pointerY < box.top + box.height / 2;
+      });
+      if (!before) {
+        draftList.append(card);
+      } else if (card.nextElementSibling !== before) {
+        draftList.insertBefore(card, before);
+      }
+    }
+
+    // Holding a card within this distance of the sticky header or the tab bar scrolls the page.
+    const EDGE = 48;
+    const SCROLL_STEP = 10;
+    const tabBar = document.querySelector(".tab-bar").getBoundingClientRect();
+    const tabBarAtBottom = tabBar.top > window.innerHeight / 2;
+    const visibleTop = Math.max(
+      document.querySelector(".site-header").getBoundingClientRect().bottom,
+      tabBarAtBottom ? 0 : tabBar.bottom,
+    );
+    const visibleBottom = tabBarAtBottom ? tabBar.top : window.innerHeight;
+    let frame = requestAnimationFrame(function scrollNearEdges() {
+      if (pointerY < visibleTop + EDGE) {
+        window.scrollBy(0, -SCROLL_STEP);
+      } else if (pointerY > visibleBottom - EDGE) {
+        window.scrollBy(0, SCROLL_STEP);
+      }
+      placeCard();
+      frame = requestAnimationFrame(scrollNearEdges);
+    });
+
+    function follow(moveEvent) {
+      pointerY = moveEvent.clientY;
+      placeCard();
+    }
+
+    function drop() {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("pointermove", follow);
+      window.removeEventListener("pointerup", drop);
+      window.removeEventListener("pointercancel", drop);
+      draftList.classList.remove("reordering");
+      const order = cardOrder();
+      const newTop = card.getBoundingClientRect().top;
+      moveCards(order);
+      // Keep the dropped card where it was let go, now that every card is full size again.
+      const dropped = draftList.children[order.indexOf(Number(card.dataset.block))];
+      window.scrollBy(0, dropped.getBoundingClientRect().top - newTop);
+    }
+
+    window.addEventListener("pointermove", follow);
+    window.addEventListener("pointerup", drop);
+    window.addEventListener("pointercancel", drop);
+  }
+
   function renderDraft() {
     if (draft.exercises.length === 0) {
       draftList.replaceChildren(
         el("li", { class: "empty" }, "No exercises yet. Tap Add on any exercise in the list."),
       );
     } else {
-      const drawnSupersets = new Set();
-      const cards = draft.exercises.flatMap((exercise, index) => {
-        if (!exercise.supersetId) {
-          return [renderExerciseCard(exercise, index)];
-        }
-        if (drawnSupersets.has(exercise.supersetId)) {
-          return [];
-        }
-        drawnSupersets.add(exercise.supersetId);
-        return [renderSupersetCard(WorkoutLogic.supersetMembers(draft.exercises, exercise.supersetId))];
+      const blocks = WorkoutLogic.exerciseBlocks(draft.exercises);
+      draftList.classList.toggle("can-reorder", blocks.length > 1);
+      const cards = blocks.map((members, blockIndex) => {
+        const card =
+          members.length > 1
+            ? renderSupersetCard(members)
+            : renderExerciseCard(members[0], draft.exercises.indexOf(members[0]));
+        card.dataset.block = blockIndex;
+        return card;
       });
       draftList.replaceChildren(...cards);
     }
@@ -1185,7 +1329,10 @@
     draftMinutes.textContent = minutes;
     draftTotals.textContent = `${calories} · ${Units.format(load, { whole: true })}`;
     const sets = countSets();
-    draftSetsDone.textContent = `${sets.done} of ${UI.plural(sets.total, "set")}`;
+    // Once a set has been started, the phone shouldn't lock between sets.
+    ScreenAwake.keepOn(WorkoutLogic.draftProgress(draft.exercises).started);
+    const screenNote = ScreenAwake.isOn() ? " · screen stays on" : "";
+    draftSetsDone.textContent = `${sets.done} of ${UI.plural(sets.total, "set")}${screenNote}`;
     draftSegments.style.gridTemplateColumns = `repeat(${Math.max(sets.total, 1)}, minmax(0, 1fr))`;
     draftSegments.replaceChildren(
       ...allSets().map((set) => el("span", { class: set.done ? "filled" : "" })),
@@ -1648,6 +1795,7 @@
   clearButton.addEventListener("click", clearWorkout);
   saveRoutineButton.addEventListener("click", saveRoutine);
 
+  ScreenAwake.onChange = updateDraftSummary;
   renderFilters();
   renderLibrary();
   renderDraft();

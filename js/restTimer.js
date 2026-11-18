@@ -177,6 +177,15 @@ const RestTimer = (() => {
       : exercises.findIndex((exercise) => exercise.name === timer.exerciseName);
   }
 
+  // Exercises dragged into a new order: the running rest stays with its exercise.
+  function followReorder(oldExercises, newExercises) {
+    const timer = runningTimer();
+    const index = exerciseIndexIn(oldExercises);
+    if (timer && index !== -1) {
+      Store.write(KEYS.restTimer, { ...timer, exerciseIndex: newExercises.indexOf(oldExercises[index]) });
+    }
+  }
+
   // The countdown, if the running rest comes right after this set.
   function countdownAfter(exercises, exerciseIndex, setIndex) {
     const timer = runningTimer();
@@ -256,5 +265,5 @@ const RestTimer = (() => {
     stop();
   }
 
-  return { start, stop, renameExercise, secondsFor, countdownAfter, stopIfNotShown, openPicker, connect };
+  return { start, stop, renameExercise, followReorder, secondsFor, countdownAfter, stopIfNotShown, openPicker, connect };
 })();
