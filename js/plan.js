@@ -10,6 +10,7 @@
   const planForm = document.getElementById("plan-form");
   const goalsForm = document.getElementById("goals-form");
   const activitySelect = document.getElementById("activity");
+  SelectMenu.enhance(activitySelect);
   const explanation = document.getElementById("plan-explanation");
   const macroCheck = document.getElementById("macro-check");
   const goalsError = document.getElementById("goals-error");

@@ -13,6 +13,7 @@
 
   const form = document.getElementById("calorie-form");
   const activitySelect = document.getElementById("activity");
+  SelectMenu.enhance(activitySelect);
   const minutesInput = document.getElementById("minutes");
   const bodyweightInput = document.getElementById("bodyweight");
   const minutesError = document.getElementById("minutes-error");

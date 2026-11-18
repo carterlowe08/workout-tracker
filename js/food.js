@@ -64,6 +64,7 @@
   const detailBrand = document.getElementById("food-detail-brand");
   const quantityInput = document.getElementById("food-quantity");
   const portionSelect = document.getElementById("food-portion");
+  SelectMenu.enhance(portionSelect);
   const amountError = document.getElementById("food-amount-error");
   const preview = document.getElementById("food-preview");
   const addButton = document.getElementById("food-add-button");

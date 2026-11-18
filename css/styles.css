@@ -2733,8 +2733,70 @@ input[type="range"] {
   visibility: visible;
 }
 
+/* A form field's dropdown as a box that opens the same menu (js/selectMenu.js). */
+.field-menu {
+  position: relative;
+  display: block;
+}
+
+.field-menu-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.field-menu-trigger:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.field-menu-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-menu-chevron {
+  flex: none;
+  color: var(--load);
+  transition: transform 0.15s;
+}
+
+.field-menu-trigger[aria-expanded="true"] .field-menu-chevron {
+  transform: rotate(180deg);
+}
+
+.field-menu-list {
+  top: calc(100% + 6px);
+  left: 0;
+  right: auto;
+  width: max(100%, 240px);
+  max-width: calc(100vw - 32px);
+  font-size: 1rem;
+  letter-spacing: normal;
+  text-transform: none;
+  z-index: 30;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .title-menu-chevron {
+  .title-menu-chevron,
+  .field-menu-chevron {
     transition: none;
   }
 }

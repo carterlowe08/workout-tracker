@@ -68,6 +68,7 @@
   const customNameInput = document.getElementById("custom-name");
   const customNameError = document.getElementById("custom-name-error");
   const customGroupSelect = document.getElementById("custom-group");
+  SelectMenu.enhance(customGroupSelect);
 
   // Once the user picks a group by hand, stop overwriting it with guesses.
   let customGroupChosenByUser = false;
