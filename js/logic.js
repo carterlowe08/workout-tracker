@@ -649,6 +649,21 @@ const WorkoutLogic = (() => {
     );
   }
 
+  function withoutWeighIn(log, dateKey) {
+    return log.filter((entry) => entry.date !== dateKey);
+  }
+
+  // The bodyweight for calorie estimates once a weigh-in is deleted. It only
+  // changes when it came from that weigh-in: then it's the newest one left, or
+  // null when there are none.
+  function bodyweightWithout(log, dateKey, bodyweight) {
+    const latest = log[log.length - 1];
+    if (latest?.date !== dateKey || latest.pounds !== bodyweight) {
+      return bodyweight;
+    }
+    return log[log.length - 2]?.pounds ?? null;
+  }
+
   // Average of the weigh-ins in the 7 days ending on dateKey, or null if there are none.
   function weightAverage(log, dateKey) {
     const weekStart = addDays(dateKey, -6);
@@ -1153,6 +1168,8 @@ const WorkoutLogic = (() => {
     setRpeTag,
     waterForDay,
     recordWeight,
+    withoutWeighIn,
+    bodyweightWithout,
     weightAverage,
     weeklyWeightChange,
     CALORIES_PER_POUND,

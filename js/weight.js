@@ -20,6 +20,8 @@
 
   let log = Store.read(KEYS.weightLog, []);
   let rangeDays = "30";
+  let showAllWeighIns = false;
+  const WEIGH_INS_SHOWN = 5;
 
   const toggle = document.getElementById("weight-toggle");
   const details = document.getElementById("weight-details");
@@ -34,6 +36,8 @@
   const form = document.getElementById("weight-form");
   const input = document.getElementById("weight-input");
   const error = document.getElementById("weight-error");
+  const weighInList = document.getElementById("weigh-in-list");
+  const weighInMore = document.getElementById("weigh-in-more");
   const rangeButtons = document.querySelectorAll(".weight-ranges .chip");
 
   function goalWeight() {
@@ -235,6 +239,76 @@
     const goal = goalPounds === null ? null : Units.fromPounds(goalPounds);
     drawChart(entries, start, goal);
     renderStats(entries, goal);
+    renderWeighIns(entries);
+  }
+
+  // The chosen range's weigh-ins, newest first.
+  function renderWeighIns(entries) {
+    const newestFirst = [...entries].reverse();
+    const listed = showAllWeighIns ? newestFirst : newestFirst.slice(0, WEIGH_INS_SHOWN);
+    weighInList.replaceChildren(...(listed.length > 0 ? listed.map(weighInRow) : [emptyWeighIns()]));
+    weighInMore.hidden = newestFirst.length <= WEIGH_INS_SHOWN;
+    weighInMore.textContent = showAllWeighIns ? "Show fewer" : `Show all ${newestFirst.length}`;
+    weighInMore.setAttribute("aria-expanded", String(showAllWeighIns));
+  }
+
+  function emptyWeighIns() {
+    return UI.el("li", { class: "empty" }, log.length === 0 ? "No weigh-ins yet." : "No weigh-ins in this range.");
+  }
+
+  function weighInRow(entry) {
+    return UI.el(
+      "li",
+      { class: "weigh-in" },
+      UI.el("span", {}, UI.formatDate(entry.date)),
+      UI.el("strong", {}, `${shown(entry.pounds)} ${unit}`),
+      UI.el(
+        "button",
+        {
+          type: "button",
+          class: "set-remove",
+          "aria-label": `Delete weigh-in for ${UI.formatDate(entry.date)}`,
+          onclick: () => deleteWeighIn(entry),
+        },
+        "×",
+      ),
+    );
+  }
+
+  // Saves the log and the bodyweight that goes with it, and updates the page.
+  function saveLog(updated, bodyweight) {
+    if (!Store.write(KEYS.weightLog, updated)) {
+      UI.showSaveError();
+      return false;
+    }
+    log = updated;
+    if (bodyweight === null) {
+      Store.remove(KEYS.bodyweight);
+    } else if (!Store.write(KEYS.bodyweight, bodyweight)) {
+      UI.showSaveError();
+    }
+    const starting = startingWeight();
+    input.value = starting === null ? "" : shown(starting);
+    setError("");
+    document.dispatchEvent(new CustomEvent("bodyweight-changed", { detail: bodyweight ?? starting }));
+    render();
+    return true;
+  }
+
+  function deleteWeighIn(entry) {
+    const bodyweight = Store.read(KEYS.bodyweight, null);
+    const bodyweightLeft = WorkoutLogic.bodyweightWithout(log, entry.date, bodyweight);
+    if (!saveLog(WorkoutLogic.withoutWeighIn(log, entry.date), bodyweightLeft)) {
+      return;
+    }
+    Undo.show(`${UI.formatDate(entry.date)} weigh-in deleted`, () => {
+      // A bodyweight typed since then stays.
+      const current = Store.read(KEYS.bodyweight, null);
+      const restoredBodyweight = current === bodyweightLeft ? bodyweight : current;
+      if (saveLog(WorkoutLogic.recordWeight(log, entry.date, entry.pounds), restoredBodyweight)) {
+        UI.showToast("Weigh-in is back");
+      }
+    });
   }
 
   function render() {
@@ -293,6 +367,7 @@
       return;
     }
     log = updated;
+    Undo.dismiss(); // Undoing a delete now could replace this new weigh-in.
     // The newest weigh-in becomes the bodyweight for calorie estimates.
     Store.write(KEYS.bodyweight, pounds);
     document.dispatchEvent(new CustomEvent("bodyweight-changed", { detail: pounds }));
@@ -315,6 +390,10 @@
     renderDetails();
   }
 
+  weighInMore.addEventListener("click", () => {
+    showAllWeighIns = !showAllWeighIns;
+    renderDetails();
+  });
   toggle.addEventListener("click", () => setExpanded(details.hidden));
   rangeButtons.forEach((button) => button.addEventListener("click", () => setRange(button.dataset.days)));
   document.getElementById("weight-minus").addEventListener("click", () => step(-1));

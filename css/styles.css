@@ -4677,6 +4677,35 @@ body:has(> .undo-bar) .toast {
   margin: 0;
 }
 
+.weigh-ins {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+
+.weigh-ins .list {
+  width: 100%;
+}
+
+.weigh-ins-heading {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.weigh-in {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+
+.weigh-in strong {
+  margin-left: auto;
+}
+
 /* Goals card (Home and Streak) and the New goal sheet */
 
 .goal-list {

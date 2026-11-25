@@ -186,7 +186,11 @@
   form.addEventListener("submit", logEntry);
   // A weigh-in from the weight tracker becomes the bodyweight for estimates.
   document.addEventListener("bodyweight-changed", (event) => {
-    showBodyweight(event.detail);
+    if (event.detail === null) {
+      bodyweightInput.value = ""; // The only weigh-in was deleted.
+    } else {
+      showBodyweight(event.detail);
+    }
     setError(bodyweightInput, bodyweightError, "");
     updatePreview();
   });
