@@ -4164,6 +4164,111 @@ input[type="range"] {
   }
 }
 
+/* Undo after deleting: counts down above the tab bar, or inside an open sheet. */
+.undo-bar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom) + 16px);
+  transform: translateX(-50%);
+  z-index: 21;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: min(440px, calc(100% - 32px));
+  padding: 10px 10px 10px 18px;
+  overflow: hidden;
+  border: 1px solid var(--control-border);
+  border-radius: 18px;
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.undo-bar.in-sheet {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  transform: none;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+/* Other messages move up so they don't cover Undo. */
+body:has(> .undo-bar) .toast {
+  bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom) + 128px);
+}
+
+.undo-text {
+  min-width: 0;
+}
+
+.undo-message,
+.undo-countdown {
+  display: block;
+}
+
+/* At most two lines, so a long name never reaches the messages above. */
+.undo-message {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.undo-countdown {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.undo-button {
+  flex: none;
+  min-height: 48px;
+  padding: 8px 20px;
+  border: none;
+  border-radius: 13px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.undo-drain {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--load);
+  transform-origin: left;
+  animation: undo-drain linear forwards;
+}
+
+@keyframes undo-drain {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .undo-drain {
+    display: none;
+  }
+}
+
+@media (min-width: 720px) {
+  .undo-bar {
+    bottom: 24px;
+  }
+
+  body:has(> .undo-bar) .toast {
+    bottom: 136px;
+  }
+}
+
 /* Water tracker on the Calories page. */
 
 .water-goal-button {

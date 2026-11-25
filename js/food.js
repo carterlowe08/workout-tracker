@@ -319,14 +319,19 @@
     return lastEntryId;
   }
 
-  async function deleteEntry(entry) {
-    if (!(await UI.ask(`Remove ${entry.name} from your diary?`, { confirmLabel: "Remove", danger: true }))) {
+  function deleteEntry(entry) {
+    const { remaining, spot } = Undo.takeOut(foodLog, entry);
+    if (!saveFoodLog(remaining)) {
       return;
     }
-    if (saveFoodLog(foodLog.filter((item) => item.id !== entry.id))) {
-      renderAll();
-      UI.showToast(`Removed ${entry.name}`);
-    }
+    renderAll();
+    Undo.show(`${entry.name} deleted`, () => {
+      if (saveFoodLog(Undo.putBack(foodLog, entry, spot))) {
+        expandedMeals.add(entry.meal);
+        renderAll();
+        UI.showToast(`${entry.name} is back`);
+      }
+    });
   }
 
   // ----- Add-food sheet -----

@@ -96,7 +96,7 @@
               type: "button",
               class: "link-button",
               "aria-label": `Delete ${entry.activity} entry`,
-              onclick: () => deleteEntry(entry.id),
+              onclick: () => deleteEntry(entry),
             },
             "Delete",
           ),
@@ -105,19 +105,27 @@
     );
   }
 
-  async function deleteEntry(id) {
-    if (!(await UI.ask("Delete this exercise entry?", { confirmLabel: "Delete", danger: true }))) {
-      return;
-    }
-    const remaining = entries.filter((entry) => entry.id !== id);
-    if (!Store.write(KEYS.calories, remaining)) {
+  function saveEntries(updated) {
+    if (!Store.write(KEYS.calories, updated)) {
       UI.showSaveError();
-      return;
+      return false;
     }
-    entries = remaining;
+    entries = updated;
     renderTotals();
     renderList();
-    UI.showToast("Entry deleted");
+    return true;
+  }
+
+  function deleteEntry(entry) {
+    const { remaining, spot } = Undo.takeOut(entries, entry);
+    if (!saveEntries(remaining)) {
+      return;
+    }
+    Undo.show(`${entry.activity} deleted`, () => {
+      if (saveEntries(Undo.putBack(entries, entry, spot))) {
+        UI.showToast(`${entry.activity} is back`);
+      }
+    });
   }
 
   function logEntry(event) {

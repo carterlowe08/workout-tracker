@@ -302,34 +302,72 @@
     UI.showToast(`Added ${name} (${exercise.group}) to the exercise list`);
   }
 
-  async function deleteCustomExercise(name) {
-    const question = `Delete "${name}" from your exercise list? Saved workouts keep it.`;
-    if (!(await UI.ask(question, { confirmLabel: "Delete", danger: true }))) {
-      return;
-    }
-    const remaining = customExercises.filter((exercise) => exercise.name !== name);
-    if (!Store.write(KEYS.customExercises, remaining)) {
+  function saveCustomExercises(updated) {
+    if (!Store.write(KEYS.customExercises, updated)) {
       UI.showSaveError();
-      return;
+      return false;
     }
-    customExercises = remaining;
+    customExercises = updated;
     renderFilters();
     renderLibrary();
-    UI.showToast(`Deleted ${name}`);
+    return true;
   }
 
-  async function removeExercise(index) {
-    const exercise = draft.exercises[index];
-    const earlierSets = exercise.sets.length - WorkoutLogic.ownSets(exercise).length;
-    const question = `Remove ${exercise.name} and the ${UI.plural(earlierSets, "finished set")} from before the swap?`;
-    if (earlierSets > 0 && !(await UI.ask(question, { confirmLabel: "Remove", danger: true }))) {
+  function deleteCustomExercise(name) {
+    const exercise = customExercises.find((item) => item.name === name);
+    const { remaining, spot } = Undo.takeOut(customExercises, exercise);
+    if (!saveCustomExercises(remaining)) {
       return;
     }
-    draft.exercises.splice(draft.exercises.indexOf(exercise), 1);
-    draft.exercises = WorkoutLogic.withoutLoneSupersets(draft.exercises);
+    Undo.show(`${name} deleted from your list`, () => {
+      const nameTaken = allExercises().some((item) => item.name.toLowerCase() === name.toLowerCase());
+      if (nameTaken) {
+        UI.showToast(`${name} is already in the exercise list.`, true);
+      } else if (saveCustomExercises(Undo.putBack(customExercises, exercise, spot))) {
+        UI.showToast(`${name} is back`);
+      }
+    });
+  }
+
+  function removeExercise(index) {
+    const exercise = draft.exercises[index];
+    const taken = Undo.takeExercise(draft.exercises, exercise);
+    draft.exercises = taken.remaining;
     saveDraft();
     renderDraft();
     renderLibrary();
+    Undo.show(`${exercise.name} removed`, () => {
+      draft.exercises = Undo.putExerciseBack(draft.exercises, taken);
+      saveDraft();
+      renderDraft();
+      renderLibrary();
+      UI.showToast(`${exercise.name} is back`);
+    });
+  }
+
+  // Undo for the last set taken off one exercise, or off each in a superset.
+  // `removed` is a list of { exercise, set, spot }.
+  function offerSetUndo(message, removed) {
+    Undo.show(message, () => {
+      // Swapping or linking an exercise replaces it, so its sets can't go back.
+      if (!removed.every(({ exercise }) => draft.exercises.includes(exercise))) {
+        UI.showToast("Couldn't undo: that exercise has changed since.", true);
+        return;
+      }
+      for (const { exercise, set, spot } of removed) {
+        exercise.sets = Undo.putBack(exercise.sets, set, spot);
+      }
+      saveDraft();
+      renderDraft();
+      UI.showToast(removed.length === 1 ? "Set is back" : "Round is back");
+    });
+  }
+
+  function takeLastSet(exercise) {
+    const set = exercise.sets[exercise.sets.length - 1];
+    const { remaining, spot } = Undo.takeOut(exercise.sets, set);
+    exercise.sets = remaining;
+    return { exercise, set, spot };
   }
 
   function addSet(exercise) {
@@ -345,9 +383,10 @@
   }
 
   function removeLastSet(exercise) {
-    exercise.sets.pop();
+    const removed = takeLastSet(exercise);
     saveDraft();
     renderDraft();
+    offerSetUndo(`${exercise.name} set ${exercise.sets.length + 1} removed`, [removed]);
   }
 
   function setsDoneText(exercise) {
@@ -761,16 +800,20 @@
     );
   }
 
-  async function deleteNote(exerciseName) {
-    const question = `Delete your note for ${exerciseName}?`;
-    if (!(await UI.ask(question, { confirmLabel: "Delete", danger: true }))) {
+  function deleteNote(exerciseName) {
+    const text = ExerciseNotes.textFor(exerciseName);
+    if (!ExerciseNotes.save(exerciseName, "")) {
       return;
     }
-    if (ExerciseNotes.save(exerciseName, "")) {
-      openNotes.delete(exerciseName);
-      renderDraft();
-      UI.showToast(`Deleted note for ${exerciseName}`);
-    }
+    openNotes.delete(exerciseName);
+    renderDraft();
+    Undo.show(`${exerciseName} note deleted`, () => {
+      if (ExerciseNotes.save(exerciseName, text)) {
+        openNotes.add(exerciseName);
+        renderDraft();
+        UI.showToast("Note is back");
+      }
+    });
   }
 
   // A small icon: two chain links.
@@ -1031,14 +1074,15 @@
   // Removes the last round: the last set of each exercise that has one in it.
   function removeRound(members) {
     const roundCount = WorkoutLogic.supersetRoundCount(members);
-    for (const member of members) {
-      // Sets finished before a swap stay; only the exercise's own sets come off.
-      if (member.sets.length === roundCount && !member.sets[roundCount - 1].doneAs) {
-        member.sets.pop();
-      }
-    }
+    // Sets finished before a swap stay; only the exercise's own sets come off.
+    const removed = members
+      .filter((member) => member.sets.length === roundCount && !member.sets[roundCount - 1].doneAs)
+      .map(takeLastSet);
     saveDraft();
     renderDraft();
+    if (removed.length > 0) {
+      offerSetUndo(`Round ${roundCount} removed`, removed);
+    }
   }
 
   // A superset's merged card: each exercise's header, then the sets round by round.
@@ -1404,6 +1448,7 @@
     logWorkoutCalories(workout);
     const checkedIn = RpeCheckIn.countToday();
     RestTimer.stop();
+    Undo.dismiss(); // A removed set or exercise belongs to the workout just saved.
     draft = { name: "", exercises: [] };
     nameInput.value = "";
     saveDraft();
@@ -1617,6 +1662,7 @@
     if (draft.exercises.length > 0 && !(await UI.ask(question, { confirmLabel: "Replace" }))) {
       return;
     }
+    Undo.dismiss(); // A removed set or exercise belongs to the workout being replaced.
     draft = {
       name: routine.name,
       exercises: routine.exercises.map((exercise) => ({
@@ -1639,14 +1685,28 @@
     if (!(await UI.ask(question, { confirmLabel: "Delete", danger: true }))) {
       return;
     }
-    const updated = routines.filter((item) => item !== routine);
+    const { remaining, spot } = Undo.takeOut(routines, routine);
+    if (!saveRoutines(remaining)) {
+      return;
+    }
+    Undo.show(`${routine.name} routine deleted`, () => {
+      const nameTaken = routines.some((item) => item.name.toLowerCase() === routine.name.toLowerCase());
+      if (nameTaken) {
+        UI.showToast(`There's already a routine called ${routine.name}.`, true);
+      } else if (saveRoutines(Undo.putBack(routines, routine, spot))) {
+        UI.showToast(`${routine.name} is back`);
+      }
+    });
+  }
+
+  function saveRoutines(updated) {
     if (!Store.write(KEYS.routines, updated)) {
       UI.showSaveError();
-      return;
+      return false;
     }
     routines = updated;
     renderRoutines();
-    UI.showToast(`Deleted routine "${routine.name}"`);
+    return true;
   }
 
   async function clearWorkout() {
@@ -1654,26 +1714,55 @@
     if (!(await UI.ask(question, { confirmLabel: "Clear", danger: true }))) {
       return;
     }
+    const cleared = draft;
     draft = { name: "", exercises: [] };
     nameInput.value = "";
     saveDraft();
     renderDraft();
     renderLibrary();
+    Undo.show("Workout cleared", () => {
+      // Anything added since stays, after the exercises that come back.
+      draft = { ...cleared, exercises: [...cleared.exercises, ...draft.exercises] };
+      nameInput.value = draft.name;
+      saveDraft();
+      renderDraft();
+      renderLibrary();
+      UI.showToast("Workout is back");
+    });
   }
 
   // Removes a saved workout and the calories-burned entry it added. Returns
   // true on success. The caller has already asked the user to confirm.
   function removeSavedWorkout(id) {
-    const remaining = savedWorkouts.filter((workout) => workout.id !== id);
-    if (!Store.write(KEYS.workouts, remaining)) {
+    const workout = savedWorkouts.find((item) => item.id === id);
+    const calorieEntries = Store.read(KEYS.calories, []);
+    const burned = calorieEntries.find((entry) => entry.workoutId === id);
+    const takenWorkout = Undo.takeOut(savedWorkouts, workout);
+    const takenBurned = burned ? Undo.takeOut(calorieEntries, burned) : null;
+    if (!saveHistory(takenWorkout.remaining, takenBurned?.remaining)) {
+      return false;
+    }
+    Undo.show(`${workout.name} deleted`, () => {
+      const workouts = Undo.putBack(savedWorkouts, workout, takenWorkout.spot);
+      const entries = takenBurned ? Undo.putBack(Store.read(KEYS.calories, []), burned, takenBurned.spot) : undefined;
+      if (saveHistory(workouts, entries)) {
+        UI.showToast(`${workout.name} is back`);
+      }
+    });
+    return true;
+  }
+
+  // Saves the workouts and, when given, the calories-burned entries.
+  function saveHistory(workouts, calorieEntries) {
+    if (!Store.write(KEYS.workouts, workouts)) {
       UI.showSaveError();
       return false;
     }
-    savedWorkouts = remaining;
-    const calorieEntries = Store.read(KEYS.calories, []);
-    Store.write(KEYS.calories, calorieEntries.filter((entry) => entry.workoutId !== id));
+    savedWorkouts = workouts;
+    if (calorieEntries && !Store.write(KEYS.calories, calorieEntries)) {
+      UI.showSaveError();
+    }
     afterHistoryChange();
-    UI.showToast("Workout deleted");
     return true;
   }
 

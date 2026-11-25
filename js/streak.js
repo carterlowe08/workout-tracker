@@ -217,16 +217,14 @@
     if (!saveCheckIns({ ...checkIns, [today]: { rpe, note: noteInput.value.trim() } })) {
       return;
     }
+    Undo.dismiss(); // Undoing a delete now could replace this new check-in.
     editing = false;
     renderAll();
     UI.showToast(wasCheckedIn ? "Check-in updated" : "Checked in! Streak updated");
   }
 
-  async function deleteCheckIn(day) {
-    const question = `Delete the check-in for ${UI.formatDate(day)}? This can break your streak.`;
-    if (!(await UI.ask(question, { confirmLabel: "Delete", danger: true }))) {
-      return;
-    }
+  function deleteCheckIn(day) {
+    const deleted = checkIns[day];
     const remaining = Object.fromEntries(Object.entries(checkIns).filter(([key]) => key !== day));
     if (!saveCheckIns(remaining)) {
       return;
@@ -236,7 +234,12 @@
       editing = false;
     }
     renderAll();
-    UI.showToast("Check-in deleted");
+    Undo.show(`${UI.formatDate(day)} check-in deleted`, () => {
+      if (saveCheckIns({ ...checkIns, [day]: deleted })) {
+        renderAll();
+        UI.showToast("Check-in is back");
+      }
+    });
   }
 
   rpeInput.addEventListener("input", updateRpeOutput);

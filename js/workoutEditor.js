@@ -23,6 +23,8 @@ const WorkoutEditor = (() => {
   const cancelButton = el("button", { type: "button", class: "button-secondary" }, "Cancel");
   const deleteButton = el("button", { type: "button", class: "link-button editor-delete" }, "Delete workout");
 
+  // Kept at the bottom of the sheet while scrolling, so Save is always in reach.
+  const footer = el("div", { class: "sheet-footer" }, errorText, el("div", { class: "button-row" }, saveButton, cancelButton));
   const dialog = el(
     "dialog",
     { class: "sheet", "aria-labelledby": "editor-title" },
@@ -36,8 +38,7 @@ const WorkoutEditor = (() => {
     summary,
     exerciseList,
     deleteButton,
-    // Kept at the bottom of the sheet while scrolling, so Save is always in reach.
-    el("div", { class: "sheet-footer" }, errorText, el("div", { class: "button-row" }, saveButton, cancelButton)),
+    footer,
   );
   document.body.append(dialog);
 
@@ -116,8 +117,17 @@ const WorkoutEditor = (() => {
           "aria-label": `Remove ${setName}`,
           disabled: exercise.sets.length === 1,
           onclick: () => {
-            exercise.sets.splice(setIndex, 1);
+            const { remaining, spot } = Undo.takeOut(exercise.sets, set);
+            exercise.sets = remaining;
             render();
+            Undo.show(
+              `${setName} removed`,
+              () => {
+                exercise.sets = Undo.putBack(exercise.sets, set, spot);
+                render();
+              },
+              { host: footer },
+            );
           },
         },
         "×",
@@ -125,7 +135,7 @@ const WorkoutEditor = (() => {
     );
   }
 
-  function renderExercise(exercise, index) {
+  function renderExercise(exercise) {
     return el(
       "div",
       { class: "exercise-card" },
@@ -145,8 +155,17 @@ const WorkoutEditor = (() => {
             class: "link-button",
             "aria-label": `Remove ${exercise.name} from this workout`,
             onclick: () => {
-              editing.exercises.splice(index, 1);
+              const { remaining, spot } = Undo.takeOut(editing.exercises, exercise);
+              editing.exercises = remaining;
               render();
+              Undo.show(
+                `${exercise.name} removed`,
+                () => {
+                  editing.exercises = Undo.putBack(editing.exercises, exercise, spot);
+                  render();
+                },
+                { host: footer },
+              );
             },
           },
           "Remove",
@@ -227,6 +246,7 @@ const WorkoutEditor = (() => {
       box?.focus();
       return;
     }
+    Undo.dismiss(); // Closing the sheet ends what its Undo could change.
     if (!hasChanges()) {
       dialog.close();
       return;
@@ -243,12 +263,13 @@ const WorkoutEditor = (() => {
     if (hasChanges() && !(await UI.ask(question, { confirmLabel: "Discard", danger: true }))) {
       return;
     }
+    Undo.dismiss();
     editing = null;
     dialog.close();
   }
 
   async function deleteWorkout() {
-    const question = `Delete "${editing.name}" from your history? This can't be undone.`;
+    const question = `Delete "${editing.name}" from your history?`;
     if (!(await UI.ask(question, { confirmLabel: "Delete", danger: true }))) {
       return;
     }

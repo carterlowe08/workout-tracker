@@ -221,9 +221,15 @@
     if (!(await UI.ask(`Delete your ${goal.name} goal? Its progress is deleted too.`, { confirmLabel: "Delete", danger: true }))) {
       return;
     }
-    if (save(goals.filter((item) => item.id !== goal.id))) {
-      UI.showToast(`Deleted ${goal.name} goal`);
+    const { remaining, spot } = Undo.takeOut(goals, goal);
+    if (!save(remaining)) {
+      return;
     }
+    Undo.show(`${goal.name} goal deleted`, () => {
+      if (save(Undo.putBack(goals, goal, spot))) {
+        UI.showToast(`${goal.name} goal is back`);
+      }
+    });
   }
 
   function goalDetails(goal, status) {
