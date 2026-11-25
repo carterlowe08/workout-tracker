@@ -21,6 +21,8 @@ const Store = (() => {
     weightLog: "workoutTracker.weightLog",
     water: "workoutTracker.waterEntries",
     waterGoal: "workoutTracker.waterGoalOz",
+    // Sets per muscle per week where a muscle balance ring closes.
+    muscleTarget: "workoutTracker.muscleTargetSets",
     goals: "workoutTracker.goals",
     exerciseNotes: "workoutTracker.exerciseNotes",
     exerciseRest: "workoutTracker.exerciseRestSeconds",

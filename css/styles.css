@@ -3503,6 +3503,161 @@ input[type="range"] {
   stroke-linejoin: round;
 }
 
+/* Muscle balance on Home: the body map shaded by sets, and a ring per muscle.
+   The figure is dark in both themes, so its shades always use the bright load color. */
+.balance-card {
+  --balance-color: var(--load-custom, #7fa8ff);
+  --balance-none: #3a3a42;
+  --balance-dark: #14141a;
+}
+
+.balance-legend {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.balance-legend i {
+  width: 18px;
+  height: 10px;
+}
+
+.balance-legend span:first-child {
+  margin-right: 4px;
+}
+
+.balance-legend span:last-child {
+  margin-left: 4px;
+}
+
+.balance-legend .balance-legend-range {
+  width: 48px;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--balance-color) 35%, var(--balance-dark)),
+    var(--balance-color)
+  );
+}
+
+.balance-summary {
+  margin: 0 0 14px;
+  font-size: 0.9rem;
+}
+
+.balance-untrained {
+  fill: var(--balance-none);
+  background: var(--balance-none);
+}
+
+.balance-trained {
+  fill: color-mix(in srgb, var(--balance-color) var(--shade), var(--balance-dark));
+}
+
+.balance-card .muscle {
+  cursor: pointer;
+}
+
+.balance-card .muscle.selected {
+  stroke: #ffffff;
+  stroke-width: 3;
+}
+
+/* A white outline disappears into a white card. */
+[data-theme="light"] .balance-card .muscle.selected {
+  stroke: #ffd166;
+}
+
+.balance-rings {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px 4px;
+  margin: 16px 0;
+}
+
+.balance-ring {
+  min-height: 44px;
+  padding: 4px 0;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+
+/* "Shoulders" is wider than its ring on the narrowest phones. */
+@media (max-width: 350px) {
+  .balance-ring {
+    font-size: 0.6rem;
+    letter-spacing: -0.02em;
+  }
+}
+
+.balance-ring[aria-pressed="true"] {
+  background: var(--surface-raised);
+  font-weight: 800;
+}
+
+.balance-ring svg {
+  display: block;
+  width: 100%;
+  max-width: 52px;
+  margin: 0 auto 4px;
+}
+
+.balance-ring circle {
+  fill: none;
+  stroke: var(--surface-raised);
+  stroke-width: 6;
+}
+
+.balance-ring[aria-pressed="true"] circle:first-child {
+  stroke: var(--control-border);
+}
+
+.balance-ring circle.filled {
+  stroke: var(--load);
+}
+
+.balance-ring text {
+  fill: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.balance-detail {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--surface-muted);
+}
+
+.balance-detail p {
+  margin: 2px 0 0;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.balance-detail .balance-detail-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.balance-target {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  font-weight: 700;
+}
+
 .muscle-names {
   margin-top: 10px;
   font-size: 0.85rem;

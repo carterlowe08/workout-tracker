@@ -83,7 +83,9 @@ const MuscleMap = (() => {
     return [left, right];
   }
 
-  function figure(shapes, main, also) {
+  // classFor("chest") gives that muscle's color class, e.g. "muscle-main";
+  // styleFor("chest") gives its inline style, for colors that vary smoothly.
+  function figure(shapes, classFor, styleFor) {
     const svg = svgEl("svg", { viewBox: `0 0 ${WIDTH} 400`, "aria-hidden": "true" });
     // The body: every shape drawn dark with a thick outline fills the gaps between muscles.
     const body = svgEl("g", { class: "muscle-body" });
@@ -97,14 +99,9 @@ const MuscleMap = (() => {
     }
     svg.append(body);
     for (const [muscle, paths] of Object.entries(shapes)) {
-      let state = "idle";
-      if (main.includes(muscle)) {
-        state = "main";
-      } else if (also.includes(muscle)) {
-        state = "also";
-      }
+      const attributes = { class: `muscle ${classFor(muscle)}`, style: styleFor(muscle), "data-muscle": muscle };
       for (const d of paths) {
-        svg.append(...bothSides("path", { d, class: `muscle muscle-${state}`, "data-muscle": muscle }));
+        svg.append(...bothSides("path", { d, ...attributes }));
       }
     }
     return svg;
@@ -121,14 +118,23 @@ const MuscleMap = (() => {
     );
   }
 
+  // The front and back figures side by side.
+  function drawFigures(classFor, styleFor = () => "") {
+    const side = (shapes, label) =>
+      el("div", { class: "muscle-figure" }, figure(shapes, classFor, styleFor), el("p", { class: "muscle-figure-label" }, label));
+    return el("div", { class: "muscle-figures" }, side(FRONT, "Front"), side(BACK, "Back"));
+  }
+
   // draw(["chest"], ["shoulders", "triceps"]) -> a card with both figures and the muscle names.
   function draw(main, also) {
-    const side = (shapes, label) =>
-      el("div", { class: "muscle-figure" }, figure(shapes, main, also), el("p", { class: "muscle-figure-label" }, label));
+    const classFor = (muscle) => {
+      if (main.includes(muscle)) return "muscle-main";
+      return also.includes(muscle) ? "muscle-also" : "muscle-idle";
+    };
     return el(
       "div",
       { class: "muscle-card" },
-      el("div", { class: "muscle-figures" }, side(FRONT, "Front"), side(BACK, "Back")),
+      drawFigures(classFor),
       el(
         "div",
         { class: "muscle-names" },
@@ -138,5 +144,5 @@ const MuscleMap = (() => {
     );
   }
 
-  return { draw, MUSCLES: [...new Set([...Object.keys(FRONT), ...Object.keys(BACK)])] };
+  return { draw, drawFigures, MUSCLES: [...new Set([...Object.keys(FRONT), ...Object.keys(BACK)])] };
 })();
