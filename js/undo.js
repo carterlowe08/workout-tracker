@@ -61,6 +61,7 @@ const Undo = (() => {
 
   let bar = null;
   let timer = null;
+  let shownAt = 0;
 
   function secondsLeft(elapsedMs) {
     return Math.ceil((SECONDS * 1000 - elapsedMs) / 1000);
@@ -76,7 +77,7 @@ const Undo = (() => {
   // sheet, which would otherwise cover it.
   function show(message, onUndo, { host = document.body } = {}) {
     dismiss();
-    const startedAt = Date.now();
+    shownAt = Date.now();
     const countdown = el("span", { class: "undo-countdown", "aria-hidden": "true" }, `${secondsLeft(0)} s to undo`);
     const shown = el(
       "div",
@@ -102,7 +103,7 @@ const Undo = (() => {
     bar = shown;
     host.prepend(shown);
     timer = setInterval(() => {
-      const left = secondsLeft(Date.now() - startedAt);
+      const left = secondsLeft(Date.now() - shownAt);
       if (left <= 0) {
         dismiss();
       } else {
@@ -111,5 +112,16 @@ const Undo = (() => {
     }, TICK_MS);
   }
 
-  return { takeOut, putBack, takeExercise, putExerciseBack, secondsLeft, show, dismiss };
+  // Keeps a bar that was inside a sheet going when the sheet closes.
+  function moveToPage() {
+    if (!bar || bar.parentElement === document.body) {
+      return;
+    }
+    // Moving restarts the draining line, so start it partway along.
+    bar.querySelector(".undo-drain").style.animationDelay = `${shownAt - Date.now()}ms`;
+    bar.classList.remove("in-sheet");
+    document.body.prepend(bar);
+  }
+
+  return { takeOut, putBack, takeExercise, putExerciseBack, secondsLeft, show, dismiss, moveToPage };
 })();

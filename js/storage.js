@@ -8,6 +8,7 @@ const Store = (() => {
     calories: "workoutTracker.calorieEntries",
     foodLog: "workoutTracker.foodLog",
     recentFoods: "workoutTracker.recentFoods",
+    savedMeals: "workoutTracker.savedMeals",
     nutritionGoals: "workoutTracker.nutritionGoals",
     planAnswers: "workoutTracker.planAnswers",
     restTimer: "workoutTracker.restTimer",

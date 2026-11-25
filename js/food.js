@@ -24,6 +24,7 @@
   // Daily calorie and macro goals come from the macro plan; null until one is set.
   const goals = Store.read(KEYS.nutritionGoals, null);
   const expandedMeals = new Set();
+  let openMenuMeal = null; // the id of the meal whose dots menu is open
   let activeMeal = MEALS[0];
   let selectedFood = null;
 
@@ -263,6 +264,18 @@
           "button",
           {
             type: "button",
+            class: "meal-menu-button",
+            id: `meal-menu-${meal.id}`,
+            "aria-label": `More for ${meal.name}`,
+            "aria-expanded": String(openMenuMeal === meal.id),
+            onclick: () => showMealMenu(openMenuMeal === meal.id ? null : meal.id),
+          },
+          "⋯",
+        ),
+        el(
+          "button",
+          {
+            type: "button",
             class: "log-button",
             "aria-label": `Log food to ${meal.name}`,
             onclick: () => openDialog(meal),
@@ -270,6 +283,7 @@
           "Log",
         ),
       ),
+      openMenuMeal === meal.id ? mealMenu(meal, entries) : null,
       el(
         "div",
         { class: "meal-details", id: detailsId, hidden: !isExpanded },
@@ -286,6 +300,87 @@
       ),
     );
   }
+
+  // ----- A meal's dots menu -----
+
+  function showMealMenu(mealId) {
+    const buttonId = `meal-menu-${mealId ?? openMenuMeal}`;
+    openMenuMeal = mealId;
+    renderMeals();
+    document.getElementById(buttonId)?.focus({ preventScroll: true });
+  }
+
+  function menuItem(title, note, onclick) {
+    return el(
+      "button",
+      { type: "button", disabled: !onclick, onclick },
+      el("span", {}, title),
+      note ? el("span", { class: "row-meta" }, note) : null,
+    );
+  }
+
+  function mealMenu(meal, entries) {
+    const yesterday = MealLogic.yesterdaysFoods(foodLog, meal.id, UI.todayKey());
+    const name = meal.name.toLowerCase();
+    const choose = (action) => () => {
+      openMenuMeal = null;
+      renderMeals();
+      action();
+    };
+    return el(
+      "div",
+      { class: "meal-menu" },
+      yesterday.length > 0
+        ? menuItem(
+            "Copy yesterday",
+            `${yesterday.map((entry) => entry.name).join(", ")} · ${UI.formatNumber(WorkoutLogic.sumNutrition(yesterday).calories)} cal`,
+            choose(() => addFoods(meal, yesterday, `Yesterday's ${name}`)),
+          )
+        : menuItem("Copy yesterday", `Nothing logged for ${name} yesterday`, null),
+      menuItem(
+        "Log a saved meal",
+        null,
+        choose(() => SavedMeals.openList(meal.name, (saved) => addFoods(meal, saved.foods, saved.name))),
+      ),
+      entries.length > 0
+        ? menuItem("Save as meal", null, choose(() => SavedMeals.openSave(meal.name, entries)))
+        : menuItem("Save as meal", "Log some food first", null),
+    );
+  }
+
+  // Adds foods to what's already in a meal today, with one Undo for all of them.
+  function addFoods(meal, foods, label) {
+    const added = MealLogic.asEntries(foods, { date: UI.todayKey(), meal: meal.id, newId: newEntryId });
+    if (!saveFoodLog([...foodLog, ...added])) {
+      return;
+    }
+    const wasExpanded = expandedMeals.has(meal.id);
+    expandedMeals.add(meal.id);
+    renderAll();
+    Undo.show(`${label} added to ${meal.name}`, () => {
+      const addedIds = new Set(added.map((entry) => entry.id));
+      if (saveFoodLog(foodLog.filter((entry) => !addedIds.has(entry.id)))) {
+        if (!wasExpanded) {
+          expandedMeals.delete(meal.id);
+        }
+        renderAll();
+        UI.showToast(`${label} taken back out`);
+      }
+    });
+  }
+
+  // Tapping anywhere else, or Escape, closes the menu.
+  document.addEventListener("click", (event) => {
+    if (openMenuMeal && !event.target.closest(".meal-menu, .meal-menu-button")) {
+      openMenuMeal = null;
+      renderMeals();
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (openMenuMeal && event.key === "Escape") {
+      showMealMenu(null);
+    }
+  });
 
   function renderMeals() {
     mealList.replaceChildren(...MEALS.map(renderMealCard));
