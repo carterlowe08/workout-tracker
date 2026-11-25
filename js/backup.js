@@ -20,21 +20,50 @@
     ].join(", ");
   }
 
-  function downloadBackup() {
+  // Opened from its home screen icon, where iPhones don't handle downloads well.
+  const openedFromIcon = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+
+  function reportSaved(data) {
+    status.textContent = `Backup saved (${describe(data)}). Keep the file somewhere safe, like your cloud storage.`;
+    UI.showToast("Backup saved");
+  }
+
+  // The phone's share sheet, with Save to Files. False when it can't be used.
+  async function shareBackup(file, data) {
+    if (!openedFromIcon || !navigator.canShare?.({ files: [file] })) {
+      return false;
+    }
+    try {
+      await navigator.share({ files: [file] });
+      reportSaved(data);
+      return true;
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        return false;
+      }
+      status.textContent = "Backup not saved.";
+      return true;
+    }
+  }
+
+  async function downloadBackup() {
     const data = Object.fromEntries(backupKeys.map(([name, key]) => [name, Store.read(key, null)]));
     const backup = { app: BACKUP_APP, version: BACKUP_VERSION, exportedAt: new Date().toISOString(), data };
-    const file = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const file = new File([JSON.stringify(backup, null, 2)], `sisu-backup-${UI.todayKey()}.json`, {
+      type: "application/json",
+    });
+    if (await shareBackup(file, data)) {
+      return;
+    }
     const link = UI.el("a", {
       href: URL.createObjectURL(file),
-      download: `sisu-backup-${UI.todayKey()}.json`,
+      download: file.name,
     });
     document.body.append(link);
     link.click();
     link.remove();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-    status.textContent =
-      `Backup downloaded (${describe(data)}). Keep the file somewhere safe, like your cloud storage.`;
-    UI.showToast("Backup downloaded");
+    reportSaved(data);
   }
 
   // Returns the backup's data if the file is a backup from this app, otherwise null.
