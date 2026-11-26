@@ -35,6 +35,11 @@
   const storedGoals = Store.read(KEYS.goals, []);
   let goals = Array.isArray(storedGoals) ? storedGoals.filter(GoalLogic.isUsableGoal) : [];
   let openGoalId = null;
+  // The goal whose target and date are being changed, and which field to start on.
+  let editingGoalId = null;
+  let editFocus = "target";
+  // Saved workouts, read on each render so a goal fills in from your best sets.
+  let workouts = [];
   // Charts are drawn once their card is on the page, so they know their width.
   let chartsToDraw = [];
 
@@ -189,6 +194,9 @@
       { class: "goal-update", novalidate: true },
       el("label", { class: "field", for: input.id }, "Where are you now?"),
       el("div", { class: "unit-input" }, input, el("span", {}, unitOf(goal))),
+      goal.kind === "lift"
+        ? el("p", { class: "field-hint" }, `Your saved workouts fill this in. Type a number only for a ${goal.name} set you didn't log.`)
+        : null,
       error,
       el("button", { type: "submit", class: "button" }, "Save progress"),
     );
@@ -232,7 +240,156 @@
     });
   }
 
+  // A field for the goal number, filled with what's saved, in the unit on screen.
+  function shownText(goal, value) {
+    return goal.measure === "time" ? GoalLogic.formatMinutes(value) : String(UI.formatNumber(shown(goal, value)));
+  }
+
+  // Change the goal number or the date. The start stays, so the path still
+  // begins where you began and your updates keep their places on the chart.
+  function editForm(goal, status) {
+    const missed = status.state === "missed";
+    const startText = shownText(goal, goal.target);
+    let endDate = missed ? "" : goal.endDate;
+    const targetInput = el("input", {
+      type: "text",
+      inputmode: "decimal",
+      id: `goal-edit-target-${goal.id}`,
+      value: startText,
+      autocomplete: "off",
+    });
+    const dateInput = el("input", {
+      type: "date",
+      id: `goal-edit-date-${goal.id}`,
+      value: endDate,
+      min: WorkoutLogic.addDays(today, 1),
+    });
+    const chips = el("div", { class: "chips", role: "radiogroup", "aria-label": "How long from today" });
+    const preview = el("p", { class: "field-hint", "aria-live": "polite" });
+    const error = el("p", { class: "field-error", "aria-live": "polite" });
+
+    function typedTarget() {
+      // Unchanged text keeps the saved number exactly (no kg rounding).
+      if (targetInput.value.trim() === startText) return goal.target;
+      const typed = GoalLogic.parseNumber(targetInput.value);
+      return Number.isFinite(typed) ? stored(goal.measure, typed) : typed;
+    }
+
+    function problems() {
+      const typed = GoalLogic.parseNumber(targetInput.value);
+      const numberMessage = GoalLogic.numberProblem(goal.measure, typed, "your goal");
+      if (numberMessage) return [{ field: "target", message: numberMessage }];
+      return GoalLogic.editProblems(goal, typedTarget(), endDate, today, (value) => format(goal, value));
+    }
+
+    function refresh() {
+      chips.replaceChildren(
+        ...WEEK_CHOICES.map((weeks) => {
+          const date = GoalLogic.endDateForWeeks(today, weeks);
+          return el(
+            "button",
+            {
+              type: "button",
+              role: "radio",
+              class: "chip",
+              "aria-checked": String(endDate === date),
+              "aria-pressed": String(endDate === date),
+              onclick: () => {
+                endDate = date;
+                dateInput.value = date;
+                clearError();
+                refresh();
+              },
+            },
+            `${weeks} weeks`,
+          );
+        }),
+      );
+      const found = problems();
+      if (found.length) {
+        preview.textContent = "";
+        return;
+      }
+      const changed = { ...goal, target: typedTarget(), endDate };
+      const perWeek = GoalLogic.goalStatus(changed, today, unit).perWeek;
+      const sign = changed.target > changed.start ? "+" : "−";
+      preview.textContent = `Your path: ${sign}${format(goal, Math.abs(perWeek))} a week, reaching ${format(goal, changed.target)} by ${UI.formatDate(endDate)}.`;
+    }
+
+    function clearError() {
+      error.textContent = "";
+      targetInput.removeAttribute("aria-invalid");
+      dateInput.removeAttribute("aria-invalid");
+    }
+
+    targetInput.addEventListener("input", () => {
+      clearError();
+      refresh();
+    });
+    dateInput.addEventListener("change", () => {
+      endDate = dateInput.value;
+      clearError();
+      refresh();
+    });
+
+    const form = el(
+      "form",
+      { class: "goal-edit", novalidate: true },
+      el("h3", {}, missed ? "Pick a new date" : "Change your goal"),
+      el("label", { class: "field", for: targetInput.id }, "Goal"),
+      el("div", { class: "unit-input" }, targetInput, el("span", {}, unitOf(goal))),
+      el("p", { class: "field" }, "By when"),
+      chips,
+      el("label", { class: "field", for: dateInput.id }, "Or pick a date"),
+      dateInput,
+      preview,
+      error,
+      el(
+        "div",
+        { class: "button-row" },
+        el("button", { type: "button", class: "button-secondary", onclick: closeEditor }, "Cancel"),
+        el("button", { type: "submit", class: "button" }, "Save changes"),
+      ),
+    );
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const found = problems();
+      if (found.length) {
+        error.textContent = found[0].message;
+        const field = found[0].field === "target" ? targetInput : dateInput;
+        field.setAttribute("aria-invalid", "true");
+        field.focus();
+        return;
+      }
+      const updated = { ...goal, target: typedTarget(), endDate };
+      editingGoalId = null;
+      if (save(goals.map((item) => (item.id === goal.id ? updated : item)))) {
+        UI.showToast(`Goal updated: ${format(goal, updated.target)} by ${UI.formatDate(endDate)}`);
+      }
+    });
+    refresh();
+    // Focused once the form is on the page.
+    chartsToDraw.push(() => (editFocus === "date" ? chips.querySelector("button") : targetInput).focus());
+    return form;
+  }
+
+  function openEditor(goal, focus) {
+    openGoalId = goal.id;
+    editingGoalId = goal.id;
+    editFocus = focus;
+    render();
+  }
+
+  function closeEditor() {
+    editingGoalId = null;
+    render();
+  }
+
   function goalDetails(goal, status) {
+    if (editingGoalId === goal.id) {
+      return el("div", { class: "goal-details", id: `goal-details-${goal.id}` }, editForm(goal, status));
+    }
+    const view = GoalLogic.withLoggedSets(goal, workouts, today);
     const chart = el("div", { class: "goal-chart-holder" });
     const details = el(
       "div",
@@ -249,7 +406,7 @@
       ),
     );
     if (status.state === "behind" || status.state === "missed") {
-      const reasons = GoalLogic.offTrackReasons(goal, reasonData(), today, (value) => format(goal, value));
+      const reasons = GoalLogic.offTrackReasons(view, reasonData(), today, (value) => format(goal, value));
       details.append(
         el(
           "div",
@@ -262,13 +419,20 @@
     }
     // Still there once a goal is reached or past its date, so a typo can be fixed.
     details.append(updateForm(goal));
-    details.append(el("button", { type: "button", class: "link-button goal-delete", onclick: () => deleteGoal(goal) }, "Delete goal"));
-    chartsToDraw.push(() => pathChart(goal, chart));
+    details.append(
+      el(
+        "div",
+        { class: "goal-actions" },
+        el("button", { type: "button", class: "link-button goal-edit-button", onclick: () => openEditor(goal, "target") }, "Edit goal or date"),
+        el("button", { type: "button", class: "link-button", onclick: () => deleteGoal(goal) }, "Delete goal"),
+      ),
+    );
+    chartsToDraw.push(() => pathChart(view, chart));
     return details;
   }
 
   function goalItem(goal) {
-    const status = GoalLogic.goalStatus(goal, today, unit);
+    const status = GoalLogic.goalStatus(GoalLogic.withLoggedSets(goal, workouts, today), today, unit);
     const isOpen = openGoalId === goal.id;
     const toggle = el(
       "button",
@@ -279,6 +443,7 @@
         "aria-controls": `goal-details-${goal.id}`,
         onclick: () => {
           openGoalId = isOpen ? null : goal.id;
+          editingGoalId = null;
           render();
         },
       },
@@ -292,11 +457,22 @@
       el("span", { class: "goal-bar", "aria-hidden": "true" }, el("span", { style: `width: ${Math.round(status.progress * 100)}%` })),
       el("span", { class: "goal-more" }, isOpen ? "Hide details" : "Details, update progress"),
     );
-    return el("li", { class: `goal-item${isOpen ? " open" : ""}` }, toggle, isOpen ? goalDetails(goal, status) : null);
+    // A goal past its date offers a new one right on the card, without opening it.
+    const newDate =
+      status.state === "missed" && editingGoalId !== goal.id
+        ? el(
+            "div",
+            { class: "goal-new-date" },
+            el("button", { type: "button", class: "pill-button", onclick: () => openEditor(goal, "date") }, "Pick a new date"),
+          )
+        : null;
+    return el("li", { class: `goal-item${isOpen ? " open" : ""}` }, toggle, newDate, isOpen ? goalDetails(goal, status) : null);
   }
 
   function render() {
     chartsToDraw = [];
+    const savedWorkouts = Store.read(KEYS.workouts, []);
+    workouts = Array.isArray(savedWorkouts) ? savedWorkouts : [];
     const list = goals.length
       ? el("ul", { class: "goal-list" }, ...goals.map(goalItem))
       : el(

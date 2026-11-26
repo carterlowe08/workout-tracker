@@ -171,6 +171,74 @@ const GoalLogic = (() => {
     return updates.length ? updates[updates.length - 1] : { date: goal.startDate, value: goal.start };
   }
 
+  // For a lift goal, the best set of each saved workout day since the goal
+  // started, as [{ date, value, logged: true }]: the heaviest weight (for a
+  // set of at least one rep) or the most reps in one set. Cardio goals have none.
+  function loggedBests(goal, workouts, todayKey) {
+    if (goal.kind !== "lift" || !["weight", "reps"].includes(goal.measure)) {
+      return [];
+    }
+    const names = matchingNames(goal);
+    const direction = Math.sign(goal.target - goal.start) || 1;
+    const bestByDay = new Map();
+    for (const workout of workouts || []) {
+      if (!isDateKey(workout?.date) || workout.date < goal.startDate || workout.date > todayKey) continue;
+      for (const exercise of workout.exercises || []) {
+        if (!names.has(String(exercise?.name).toLowerCase())) continue;
+        for (const set of exercise.sets || []) {
+          if (!set || set.done === false || !Number.isFinite(set.reps) || set.reps < 1) continue;
+          const value = goal.measure === "weight" ? set.weight : set.reps;
+          if (!Number.isFinite(value) || value <= 0) continue;
+          const best = bestByDay.get(workout.date);
+          if (best === undefined || (value - best) * direction > 0) {
+            bestByDay.set(workout.date, value);
+          }
+        }
+      }
+    }
+    return [...bestByDay].map(([date, value]) => ({ date, value, logged: true }));
+  }
+
+  // The goal with its logged sets added to the typed updates, oldest first.
+  // On a day with both, the better number counts. Only for showing: saved
+  // goals keep just the typed updates, so deleting a workout takes its set away.
+  function withLoggedSets(goal, workouts, todayKey) {
+    const direction = Math.sign(goal.target - goal.start) || 1;
+    const byDay = new Map((goal.updates || []).map((update) => [update.date, update]));
+    for (const point of loggedBests(goal, workouts, todayKey)) {
+      const typed = byDay.get(point.date);
+      if (!typed || (point.value - typed.value) * direction > 0) {
+        byDay.set(point.date, point);
+      }
+    }
+    return { ...goal, updates: [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date)) };
+  }
+
+  // Where a goal stands now. A lift goal counts your best since it started,
+  // so a light day doesn't look like going backwards; cardio uses the newest number.
+  function current(goal) {
+    if (goal.kind !== "lift") {
+      return latest(goal);
+    }
+    const direction = Math.sign(goal.target - goal.start) || 1;
+    return (goal.updates || []).reduce(
+      (best, update) => ((update.value - best.value) * direction > 0 ? update : best),
+      { date: goal.startDate, value: goal.start },
+    );
+  }
+
+  // Problems with a changed target or date, as [{ field, message }]. The
+  // starting number and date stay, so the path still begins where you began.
+  function editProblems(goal, target, endDate, todayKey, format = String) {
+    return validateGoal({ ...goal, target, endDate }, todayKey)
+      .filter((error) => error.field === "target" || error.field === "endDate")
+      .map((error) =>
+        error.message.startsWith("Your goal should be different")
+          ? { ...error, message: `Your goal should be different from where you started (${format(goal.start)}).` }
+          : error,
+      );
+  }
+
   // One checkpoint per week of the goal: [{ week, date, value }], ending on the goal date.
   function weeklyPlan(goal, weightUnit = "lb") {
     const total = Math.max(daysBetween(goal.startDate, goal.endDate), 1);
@@ -186,7 +254,7 @@ const GoalLogic = (() => {
   function goalStatus(goal, todayKey, weightUnit = "lb") {
     const direction = Math.sign(goal.target - goal.start);
     const change = Math.abs(goal.target - goal.start);
-    const now = latest(goal);
+    const now = current(goal);
     const expectedNow = expectedValue(goal, todayKey);
     const gap = (now.value - expectedNow) * direction;
     const totalDays = Math.max(daysBetween(goal.startDate, goal.endDate), 1);
@@ -377,6 +445,10 @@ const GoalLogic = (() => {
     expectedValue,
     recordUpdate,
     latest,
+    loggedBests,
+    withLoggedSets,
+    current,
+    editProblems,
     weeklyPlan,
     goalStatus,
     offTrackReasons,

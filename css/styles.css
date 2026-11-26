@@ -4917,9 +4917,50 @@ body:has(> .undo-bar) .toast {
   font-weight: 600;
 }
 
-.goal-delete {
-  justify-self: start;
+.goal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.goal-actions .link-button {
   padding-left: 0;
+  padding-right: 0;
+}
+
+.goal-actions .goal-edit-button {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.goal-details .field-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.goal-details .field-error:empty {
+  display: none;
+}
+
+.goal-new-date {
+  padding: 0 14px 14px;
+}
+
+.goal-edit {
+  display: grid;
+  gap: 8px;
+}
+
+/* Fields and chips sit on the goal's muted card, so they need the raised color to show. */
+.goal-details input,
+.goal-edit .chip:not([aria-pressed="true"]) {
+  background: var(--surface-raised);
+}
+
+.goal-edit h3 {
+  margin: 0;
+  font-size: 1rem;
 }
 
 .goal-sheet .sheet-header span {
