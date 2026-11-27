@@ -2641,6 +2641,72 @@ input[type="range"] {
   color: var(--text);
 }
 
+/* Rest days: a moon with a dashed blue outline. Blue is lighter in dark mode. */
+:root {
+  --rest: #8fb3ff;
+}
+
+:root[data-theme="light"] {
+  --rest: #2f66d6;
+}
+
+.calendar-day.rest {
+  background: none;
+  border: 2px dashed var(--rest);
+  color: var(--rest);
+}
+
+/* More specific than ".legend span::before", so it replaces the filled swatch. */
+.legend .legend-rest::before {
+  box-sizing: border-box;
+  border: 1.5px dashed var(--rest);
+  background: none;
+}
+
+/* The week dots sit on the deep green tile in both themes, so they keep the light blue. */
+.week-dot.rest {
+  border: 2px dashed #8fb3ff;
+  background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238fb3ff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z'/></svg>") center / 14px no-repeat;
+}
+
+.rest-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rest-button svg,
+.rest-badge svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* The rest note wraps instead of trailing off, and the row never widens the tile. */
+.checkin-rest {
+  min-width: 0;
+}
+
+.checkin-rest .checkin-done-note {
+  white-space: normal;
+}
+
+.rest-badge {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  border: 2px dashed #8fb3ff;
+  color: #8fb3ff;
+}
+
+.rest-badge svg {
+  width: 22px;
+  height: 22px;
+}
+
 /* Today's check-in: the form until you check in, then a summary with Edit. */
 .checkin-tile {
   gap: 0;

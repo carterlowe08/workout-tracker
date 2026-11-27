@@ -5,7 +5,7 @@
 //
 // scripts/deploy.sh replaces VERSION with the project commit. Each version
 // keeps its own copy, so files from two versions are never mixed.
-const VERSION = "d17a848";
+const VERSION = "3301d2f";
 const APP_CACHE = `sisu-app-${VERSION}`;
 const FONT_CACHE = "sisu-fonts";
 const FONT_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com"];

@@ -150,26 +150,41 @@ const WorkoutLogic = (() => {
 
   // Consecutive days with a check-in, ending today. If today has no check-in
   // yet, the streak still counts up to yesterday, so it does not reset at midnight.
-  function currentStreak(dateKeys, todayKey) {
+  // Rest days (`restKeys`) keep the streak going without adding to it.
+  function currentStreak(dateKeys, todayKey, restKeys = []) {
     const days = new Set(dateKeys);
+    const rest = new Set(restKeys);
     let day = days.has(todayKey) ? todayKey : addDays(todayKey, -1);
     let streak = 0;
-    while (days.has(day)) {
-      streak += 1;
+    while (days.has(day) || rest.has(day)) {
+      if (days.has(day)) streak += 1;
       day = addDays(day, -1);
     }
     return streak;
   }
 
-  function bestStreak(dateKeys) {
+  // The longest run of check-ins, where only rest days may sit between them.
+  function bestStreak(dateKeys, restKeys = []) {
     const days = [...new Set(dateKeys)].sort();
+    const rest = new Set(restKeys);
+    const onlyRestBetween = (from, to) => {
+      for (let day = addDays(from, 1); day < to; day = addDays(day, 1)) {
+        if (!rest.has(day)) return false;
+      }
+      return true;
+    };
     let best = 0;
     let run = 0;
     days.forEach((day, index) => {
-      run = index > 0 && addDays(days[index - 1], 1) === day ? run + 1 : 1;
+      run = index > 0 && onlyRestBetween(days[index - 1], day) ? run + 1 : 1;
       best = Math.max(best, run);
     });
     return best;
+  }
+
+  // Saved rest days as a clean list of date keys, so a damaged entry can't break the streak.
+  function cleanRestDays(saved) {
+    return Array.isArray(saved) ? [...new Set(saved.filter((day) => typeof day === "string" && /^\d{4}-\d{2}-\d{2}$/.test(day) && addDays(day, 0) === day))].sort() : [];
   }
 
   // ----- Weekly streak: weeks (Sunday to Saturday) in a row that hit a goal -----
@@ -1133,6 +1148,7 @@ const WorkoutLogic = (() => {
 
   return {
     loadCaption,
+    cleanRestDays,
     MET_VALUES,
     toDateKey,
     addDays,

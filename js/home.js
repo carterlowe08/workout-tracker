@@ -119,7 +119,11 @@
   const weekGoal = WorkoutLogic.clampWeekGoal(Store.read(Store.KEYS.weekGoal, WorkoutLogic.DEFAULT_WEEK_GOAL));
   const best = WorkoutLogic.bestWeekStreak(checkInDays, today, weekGoal);
   document.getElementById("streak-count").textContent = WorkoutLogic.currentWeekStreak(checkInDays, today, weekGoal);
-  document.getElementById("day-streak-count").textContent = WorkoutLogic.currentStreak(checkInDays, today);
+  document.getElementById("day-streak-count").textContent = WorkoutLogic.currentStreak(
+    checkInDays,
+    today,
+    WorkoutLogic.cleanRestDays(Store.read(Store.KEYS.restDays, [])),
+  );
   document.getElementById("streak-best").textContent = best > 0 ? `Best ${best} wk` : "";
   const thisWeek = WorkoutLogic.weekDays(today);
   document.getElementById("week-dots").replaceChildren(

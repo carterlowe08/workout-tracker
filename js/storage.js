@@ -17,6 +17,8 @@ const Store = (() => {
     weightUnit: "workoutTracker.weightUnit",
     theme: "workoutTracker.theme",
     checkIns: "workoutTracker.checkIns",
+    // Days marked as rest, as date keys: they keep the day streak going.
+    restDays: "workoutTracker.restDays",
     weekGoal: "workoutTracker.weekGoalDays",
     bodyweight: "workoutTracker.bodyweightLb",
     weightLog: "workoutTracker.weightLog",

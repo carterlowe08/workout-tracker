@@ -8,6 +8,9 @@
   // Check-ins are stored by date: { "2026-10-13": { rpe: 8, note: "..." } }.
   // rpe is null when a workout was saved but its RPE was skipped.
   let checkIns = Store.read(KEYS.checkIns, {});
+  // Days marked as rest: they keep the day streak going without adding to it.
+  // A check-in on the same day wins.
+  let restDays = WorkoutLogic.cleanRestDays(Store.read(KEYS.restDays, []));
   let weekGoal = WorkoutLogic.clampWeekGoal(Store.read(KEYS.weekGoal, WorkoutLogic.DEFAULT_WEEK_GOAL));
 
   const form = document.getElementById("checkin-form");
@@ -26,6 +29,8 @@
   const list = document.getElementById("checkin-list");
   const donePanel = document.getElementById("checkin-done");
   const cancelButton = document.getElementById("checkin-cancel");
+  const restButton = document.getElementById("rest-button");
+  const restPanel = document.getElementById("checkin-rest");
 
   // The calendar shows one month at a time, starting with this one.
   const [thisYear, thisMonth] = UI.todayKey().split("-").map(Number);
@@ -33,6 +38,11 @@
   let shownMonth = thisMonth;
   // True while changing a check-in already made today.
   let editing = false;
+
+  // A rest day only shows when there's no check-in that day.
+  function isRestDay(day) {
+    return restDays.includes(day) && !checkIns[day];
+  }
 
   function rpeClass(rpe) {
     if (!rpe) return "rpe-none";
@@ -57,7 +67,7 @@
     const weekStreak = WorkoutLogic.currentWeekStreak(days, today, weekGoal);
     currentStreak.textContent = weekStreak;
     bestStreak.textContent = WorkoutLogic.bestWeekStreak(days, today, weekGoal);
-    dayStreak.textContent = WorkoutLogic.currentStreak(days, today);
+    dayStreak.textContent = WorkoutLogic.currentStreak(days, today, restDays);
 
     const thisWeek = WorkoutLogic.weekDays(today);
     const thisWeekCount = thisWeek.filter((day) => checkIns[day]).length;
@@ -67,11 +77,12 @@
       ...thisWeek.map((day) => {
         const classes = ["week-dot"];
         if (checkIns[day]) classes.push("checked");
+        if (isRestDay(day)) classes.push("rest");
         if (day === today) classes.push("today");
         if (day > today) classes.push("future");
         const [year, month, date] = day.split("-").map(Number);
         const letter = new Date(year, month - 1, date).toLocaleDateString(undefined, { weekday: "narrow" });
-        const description = `${UI.formatDate(day)}: ${checkIns[day] ? "checked in" : "no check-in"}`;
+        const description = `${UI.formatDate(day)}: ${checkIns[day] ? "checked in" : isRestDay(day) ? "rest day" : "no check-in"}`;
         return el(
           "div",
           { class: "week-dot-day" },
@@ -98,13 +109,23 @@
     renderStreak();
   }
 
-  // Before today's check-in the purple row is the form; after it, a summary with Edit.
+  // Before today's check-in the purple row is the form; after it, a summary
+  // with Edit. A rest day shows its own summary with Change.
   function renderForm() {
-    const todayCheckIn = checkIns[UI.todayKey()];
+    const today = UI.todayKey();
+    const todayCheckIn = checkIns[today];
     const showSummary = Boolean(todayCheckIn) && !editing;
+    const resting = isRestDay(today);
     donePanel.hidden = !showSummary;
-    form.hidden = showSummary;
+    restPanel.hidden = !resting;
+    form.hidden = showSummary || resting;
     cancelButton.hidden = !todayCheckIn;
+    restButton.hidden = Boolean(todayCheckIn);
+    if (resting) {
+      const streak = WorkoutLogic.currentStreak(Object.keys(checkIns), today, restDays);
+      document.getElementById("rest-note").textContent =
+        streak > 0 ? `Your ${streak}-day streak keeps going.` : "Rest up. Check in after your next workout.";
+    }
     if (todayCheckIn) {
       const { rpe } = todayCheckIn;
       document.getElementById("done-rpe").textContent = rpe || "–";
@@ -134,9 +155,10 @@
       const checkIn = checkIns[day];
       const classes = ["calendar-day"];
       if (checkIn) classes.push(rpeClass(checkIn.rpe));
+      if (isRestDay(day)) classes.push("rest");
       if (day === today) classes.push("today");
       if (day > today) classes.push("future");
-      const description = `${UI.formatDate(day)}: ${checkIn ? describeRpe(checkIn.rpe) : "no check-in"}`;
+      const description = `${UI.formatDate(day)}: ${checkIn ? describeRpe(checkIn.rpe) : isRestDay(day) ? "rest day" : "no check-in"}`;
       cells.push(
         el("div", { class: classes.join(" "), title: description, "aria-label": description, role: "img" }, String(date)),
       );
@@ -205,6 +227,39 @@
     return true;
   }
 
+  function saveRestDays(updated) {
+    if (!Store.write(KEYS.restDays, updated)) {
+      UI.showSaveError();
+      return false;
+    }
+    restDays = updated;
+    return true;
+  }
+
+  function markRestDay() {
+    const today = UI.todayKey();
+    if (checkIns[today] || !saveRestDays(WorkoutLogic.cleanRestDays([...restDays, today]))) {
+      return;
+    }
+    renderAll();
+    Undo.show("Rest day saved", () => {
+      if (saveRestDays(restDays.filter((day) => day !== today))) {
+        renderAll();
+        UI.showToast("Rest day taken back");
+      }
+    });
+  }
+
+  // Change: back to the check-in form, for a day that turned into a workout.
+  function clearRestDay() {
+    const today = UI.todayKey();
+    if (saveRestDays(restDays.filter((day) => day !== today))) {
+      Undo.dismiss();
+      renderAll();
+      rpeInput.focus();
+    }
+  }
+
   function checkIn(event) {
     event.preventDefault();
     const today = UI.todayKey();
@@ -243,6 +298,8 @@
   }
 
   rpeInput.addEventListener("input", updateRpeOutput);
+  restButton.addEventListener("click", markRestDay);
+  document.getElementById("rest-change").addEventListener("click", clearRestDay);
   form.addEventListener("submit", checkIn);
   document.getElementById("checkin-edit").addEventListener("click", () => {
     editing = true;
