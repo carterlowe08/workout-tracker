@@ -49,8 +49,11 @@
   document.getElementById("load-unit").textContent = unit;
   document.getElementById("load-bar").style.width = `${Math.round(loadShareOfBest * 100)}%`;
   const weekText = `${UI.formatNumber(inChosenUnit(loadThisWeek))} ${unit} this week`;
-  document.getElementById("load-caption").textContent =
-    bestLoadDay > 0 ? `${Math.round(loadShareOfBest * 100)}% of your best day · ${weekText}` : "No workouts saved yet";
+  const workoutsThisWeek = workouts.filter((workout) => workout.date >= weekStart).length;
+  document.getElementById("load-caption").textContent = WorkoutLogic.loadCaption(
+    { savedWorkouts: workouts.length, workoutsThisWeek, bestLoadDay, loadToday },
+    weekText,
+  );
 
   // A tiny line of total load per week; hidden until there is something to draw.
   function drawSparkline(container, values) {

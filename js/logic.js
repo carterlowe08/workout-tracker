@@ -98,6 +98,19 @@ const WorkoutLogic = (() => {
     return Math.max(0, ...totals.values());
   }
 
+  // The line under Home's load number. Workouts of only 0 lb sets (pull-ups,
+  // push-ups) still count as saved, so the tile doesn't say there are none.
+  // `weekText` is this week's load, like "1,200 lb this week".
+  function loadCaption({ savedWorkouts, workoutsThisWeek, bestLoadDay, loadToday }, weekText) {
+    if (bestLoadDay > 0) {
+      return `${Math.round(Math.min(loadToday / bestLoadDay, 1) * 100)}% of your best day · ${weekText}`;
+    }
+    if (savedWorkouts > 0) {
+      return `${weekText} · ${workoutsThisWeek} ${workoutsThisWeek === 1 ? "workout" : "workouts"}`;
+    }
+    return "No workouts saved yet";
+  }
+
   // About how long one warm-up set takes, used to place it on the workout's clock.
   const WARMUP_SET_MS = 60 * 1000;
 
@@ -1119,6 +1132,7 @@ const WorkoutLogic = (() => {
   }
 
   return {
+    loadCaption,
     MET_VALUES,
     toDateKey,
     addDays,
