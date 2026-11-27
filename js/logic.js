@@ -263,6 +263,23 @@ const WorkoutLogic = (() => {
     return Array.from({ length: 7 }, (_, weekday) => addDays(sunday, weekday));
   }
 
+  // True when any saved workout is dated before `dateKey`.
+  function hasWorkoutBefore(workouts, dateKey) {
+    return (Array.isArray(workouts) ? workouts : []).some((workout) => typeof workout?.date === "string" && workout.date < dateKey);
+  }
+
+  // When set `index`'s weight changes from `oldWeight`, the sets below it that
+  // follow: not started or finished, and still showing the old weight. In a
+  // new exercise that's every set; a pyramid (135, 155, 175) keeps its steps.
+  function setsThatFollow(sets, index, oldWeight) {
+    const following = [];
+    for (let below = index + 1; below < sets.length; below += 1) {
+      const set = sets[below];
+      if (!set.done && !set.startedAt && set.weight === oldWeight) following.push(below);
+    }
+    return following;
+  }
+
   // One line on what's left to do this week. `openDays` is how many days from
   // today to Saturday don't have a check-in yet, so a goal the week can no
   // longer reach (joining on a Friday) is said plainly instead of asked for.
@@ -1155,6 +1172,8 @@ const WorkoutLogic = (() => {
 
   return {
     loadCaption,
+    hasWorkoutBefore,
+    setsThatFollow,
     cleanRestDays,
     MET_VALUES,
     toDateKey,

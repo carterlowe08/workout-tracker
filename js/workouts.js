@@ -421,7 +421,10 @@
   // Typing in a number box updates the draft and the totals without
   // re-drawing the list, so the cursor stays where it is.
   // Weights are typed in the chosen unit (lb or kg) and saved in pounds.
-  function setInput(set, field, max, label, { dumbbell = false } = {}) {
+  // Each set's weight box, so a weight typed above can show in the sets below.
+  const weightBoxes = new WeakMap();
+
+  function setInput(set, field, max, label, { dumbbell = false, exercise = null } = {}) {
     const isWeight = field === "weight";
     const input = el("input", {
       type: "number",
@@ -438,7 +441,18 @@
       // A negative number is never saved; the box goes back to 0 when you leave it.
       const kept = Math.max(typed, 0);
       input.setAttribute("aria-invalid", String(typed < 0));
+      const before = set[field];
       set[field] = isWeight ? Units.toPounds(kept) : kept;
+      // Sets below that still match the old weight follow the new one, so the
+      // weight is typed once (a set changed on purpose keeps its own number).
+      if (isWeight && exercise) {
+        for (const index of WorkoutLogic.setsThatFollow(exercise.sets, exercise.sets.indexOf(set), before)) {
+          const below = exercise.sets[index];
+          below.weight = set.weight;
+          const box = weightBoxes.get(below);
+          if (box) box.value = String(Units.fromPounds(below.weight));
+        }
+      }
       saveDraft();
       updateDraftSummary();
     });
@@ -449,6 +463,7 @@
         UI.showToast(`${isWeight ? "Weight" : "Reps"} can't be negative, so it's back to 0.`, true);
       }
     });
+    if (isWeight) weightBoxes.set(set, input);
     // Select the whole number when the box is tapped, so typing replaces it
     // instead of adding digits to the end. The short delay is needed on
     // phones, which otherwise place the cursor after the tap and undo the selection.
@@ -576,6 +591,7 @@
       previousSet(previous),
       setInput(set, "weight", MAX_WEIGHT_LB, `${setName} weight in ${Units.current()}`, {
         dumbbell: isDumbbellExercise(exercise.name),
+        exercise,
       }),
       setInput(set, "reps", MAX_REPS, `${setName} reps`),
       SetRpe.box(set, exercise.name, ownIndex + 1, saveDraft),
@@ -1686,8 +1702,22 @@
     saveDraft();
     renderDraft();
     renderLibrary();
-    draftList.scrollIntoView({ behavior: "smooth", block: "start" });
+    showWorkout();
     UI.showToast(`Started ${routine.name}`);
+  }
+
+  // Brings "Your workout" on screen after starting a routine. It waits a moment
+  // so a closing popup (the program quiz) can't pull the page back, and jumps
+  // the rest of the way if the smooth scroll didn't get there.
+  function showWorkout() {
+    const heading = document.getElementById("draft-heading");
+    const arrived = () => Math.abs(heading.getBoundingClientRect().top - parseFloat(getComputedStyle(heading).scrollMarginTop)) < 8;
+    setTimeout(() => {
+      heading.scrollIntoView({ behavior: "smooth", block: "start" });
+      setTimeout(() => {
+        if (!arrived()) heading.scrollIntoView({ block: "start" });
+      }, 700);
+    }, 50);
   }
 
   async function deleteRoutine(routine) {

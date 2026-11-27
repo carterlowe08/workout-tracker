@@ -229,6 +229,9 @@
     ),
   );
   button.addEventListener("click", open);
+  // Someone new has no finished week to look back on, so the button waits
+  // until a workout is saved before this week started.
+  button.hidden = !WorkoutLogic.hasWorkoutBefore(data.workouts, WorkoutLogic.addDays(weekStart, 7));
 
   if (week.workouts > 0 && Store.read(Store.KEYS.recapShownWeek, null) !== weekStart) {
     if (Store.write(Store.KEYS.recapShownWeek, weekStart)) {
