@@ -170,6 +170,10 @@ body {
   line-height: 1.5;
   padding-bottom: calc(var(--tab-bar-height) + 24px);
   -webkit-font-smoothing: antialiased;
+  /* A long word (a name typed with no spaces) breaks onto the next line
+     instead of running past the edge. "break-word" only breaks a word that
+     can't fit, so short labels like "Search" are never split. */
+  overflow-wrap: break-word;
 }
 
 a {
@@ -482,6 +486,31 @@ table.visually-hidden {
   font-size: 0.875rem;
 }
 
+/* The smallest phones (320 px wide): the icons and the pill tighten up so the
+   page name stays inside its pill. */
+@media (max-width: 359px) {
+  .tab-bar {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .tab-bar a {
+    min-width: 36px;
+  }
+
+  .tab-bar a[aria-current="page"] {
+    gap: 6px;
+    padding: 0 12px;
+    font-size: 0.8rem;
+  }
+
+  .tab-bar-color-toggle {
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+  }
+}
+
 @media (min-width: 720px) {
   body {
     padding-bottom: calc(var(--tab-bar-height) + 32px);
@@ -537,6 +566,12 @@ main {
   padding: 0 16px;
   display: grid;
   gap: 16px;
+}
+
+/* Grid items default to the width of their longest unbreakable content, so a
+   one-line check-in note could stretch the whole page. Let them shrink. */
+main > * {
+  min-width: 0;
 }
 
 .page-intro p {
@@ -954,6 +989,13 @@ a.tile:focus-visible {
   font-weight: 700;
 }
 
+/* Names in lists (saved workouts, foods, routines) are typed by you, so one
+   long word may break anywhere rather than stretch the list past the screen. */
+.row-title,
+.row-meta {
+  overflow-wrap: anywhere;
+}
+
 .row-meta {
   display: block;
   font-size: 0.85rem;
@@ -980,6 +1022,9 @@ a.tile:focus-visible {
 
 .field {
   display: grid;
+  /* One column that may shrink, so a long choice in a menu (like
+     "1 banana (126 g)") trails off with "…" instead of poking out of a sheet. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   font-size: 0.7rem;
   font-weight: 700;
@@ -1344,6 +1389,38 @@ input[aria-invalid="true"] {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   padding: 8px 2px;
+}
+
+/* The smallest phones (320 px wide): the cards around a set give up their
+   side padding and the small columns shrink, so the weight and reps boxes keep
+   room for numbers like 142.5 and 10. The buttons keep their full size. */
+@media (max-width: 359px) {
+  .workout-layout > .card {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .exercise-card {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  .set-row {
+    grid-template-columns: 22px 28px minmax(0, 1.25fr) minmax(0, 1fr) 28px 24px 46px;
+    gap: 2px;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .set-row:not(.set-labels) .set-number {
+    width: 22px;
+  }
+
+  .set-row input {
+    padding-left: 0;
+    padding-right: 0;
+    font-size: 0.9rem;
+  }
 }
 
 /* Last time's RPE, after its reps. */
@@ -2153,6 +2230,11 @@ input[aria-invalid="true"] {
 .food-detail {
   display: grid;
   gap: 10px;
+}
+
+/* Amount needs a few digits; the unit ("1 banana (126 g)") needs the room. */
+.food-detail .field-row {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
 }
 
 .food-detail p {

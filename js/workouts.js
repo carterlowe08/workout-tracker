@@ -435,9 +435,19 @@
     input.addEventListener("input", () => {
       const value = Number(input.value);
       const typed = input.value === "" || Number.isNaN(value) ? 0 : value;
-      set[field] = isWeight ? Units.toPounds(typed) : typed;
+      // A negative number is never saved; the box goes back to 0 when you leave it.
+      const kept = Math.max(typed, 0);
+      input.setAttribute("aria-invalid", String(typed < 0));
+      set[field] = isWeight ? Units.toPounds(kept) : kept;
       saveDraft();
       updateDraftSummary();
+    });
+    input.addEventListener("change", () => {
+      if (Number(input.value) < 0) {
+        input.value = "0";
+        input.setAttribute("aria-invalid", "false");
+        UI.showToast(`${isWeight ? "Weight" : "Reps"} can't be negative, so it's back to 0.`, true);
+      }
     });
     // Select the whole number when the box is tapped, so typing replaces it
     // instead of adding digits to the end. The short delay is needed on

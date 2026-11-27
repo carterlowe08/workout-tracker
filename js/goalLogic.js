@@ -100,7 +100,7 @@ const GoalLogic = (() => {
 
   // Problems with a new or edited goal, as [{ field, message }]; empty when it can be saved.
   // `start` and `target` are numbers in the stored unit (pounds for weight).
-  function validateGoal({ name, measure, start, target, endDate }, todayKey) {
+  function validateGoal({ name, kind, measure, start, target, endDate }, todayKey) {
     const errors = [];
     const info = MEASURES[measure];
     if (!String(name ?? "").trim()) {
@@ -117,6 +117,9 @@ const GoalLogic = (() => {
       errors.push({ field: "target", message: "Your goal should be different from where you are now." });
     } else if (Number.isFinite(target) && target === 0) {
       errors.push({ field: "target", message: "Your goal should be more than 0." });
+    } else if (kind === "lift" && Number.isFinite(start) && Number.isFinite(target) && target < start) {
+      // Lifting less is almost always a typo; only cardio times may go down (a faster mile).
+      errors.push({ field: "target", message: "Your goal should be more than where you are now." });
     }
     if (!isDateKey(endDate)) {
       errors.push({ field: "endDate", message: "Pick when you want to reach it." });
@@ -232,11 +235,15 @@ const GoalLogic = (() => {
   function editProblems(goal, target, endDate, todayKey, format = String) {
     return validateGoal({ ...goal, target, endDate }, todayKey)
       .filter((error) => error.field === "target" || error.field === "endDate")
-      .map((error) =>
-        error.message.startsWith("Your goal should be different")
-          ? { ...error, message: `Your goal should be different from where you started (${format(goal.start)}).` }
-          : error,
-      );
+      .map((error) => {
+        if (error.message.startsWith("Your goal should be different")) {
+          return { ...error, message: `Your goal should be different from where you started (${format(goal.start)}).` };
+        }
+        if (error.message === "Your goal should be more than where you are now.") {
+          return { ...error, message: `Your goal should be more than where you started (${format(goal.start)}).` };
+        }
+        return error;
+      });
   }
 
   // One checkpoint per week of the goal: [{ week, date, value }], ending on the goal date.

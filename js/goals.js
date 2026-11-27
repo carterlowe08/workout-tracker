@@ -797,6 +797,9 @@
       if (problem) return problem;
       if (target === GoalLogic.parseNumber(draft.start)) return "Your goal should be different from where you are now.";
       if (target === 0) return "Your goal should be more than 0.";
+      if (draft.kind === "lift" && target < GoalLogic.parseNumber(draft.start)) {
+        return "Your goal should be more than where you are now.";
+      }
     }
     return "";
   }

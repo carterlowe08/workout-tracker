@@ -71,8 +71,15 @@
 
     const thisWeek = WorkoutLogic.weekDays(today);
     const thisWeekCount = thisWeek.filter((day) => checkIns[day]).length;
-    document.getElementById("week-progress").textContent = `${thisWeekCount} of ${weekGoal} days`;
-    document.getElementById("week-hint").textContent = WorkoutLogic.weekGoalHint(thisWeekCount, weekGoal, weekStreak);
+    const openDays = thisWeek.filter((day) => day >= today && !checkIns[day]).length;
+    document.getElementById("week-progress").textContent =
+      `${thisWeekCount} of ${weekGoal} ${weekGoal === 1 ? "day" : "days"}`;
+    document.getElementById("week-hint").textContent = WorkoutLogic.weekGoalHint(
+      thisWeekCount,
+      weekGoal,
+      weekStreak,
+      openDays,
+    );
     document.getElementById("week-dots").replaceChildren(
       ...thisWeek.map((day) => {
         const classes = ["week-dot"];

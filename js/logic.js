@@ -263,10 +263,17 @@ const WorkoutLogic = (() => {
     return Array.from({ length: 7 }, (_, weekday) => addDays(sunday, weekday));
   }
 
-  // One line on what's left to do this week.
-  function weekGoalHint(thisWeekCount, goal, weekStreak) {
+  // One line on what's left to do this week. `openDays` is how many days from
+  // today to Saturday don't have a check-in yet, so a goal the week can no
+  // longer reach (joining on a Friday) is said plainly instead of asked for.
+  function weekGoalHint(thisWeekCount, goal, weekStreak, openDays = 7) {
     if (thisWeekCount >= goal) return "Goal hit this week. Nice work.";
     const daysLeft = goal - thisWeekCount;
+    if (openDays < daysLeft) {
+      const left = openDays === 0 ? "No days left" : `Only ${openDays} ${openDays === 1 ? "day" : "days"} left`;
+      const next = weekStreak > 0 ? "Your streak starts over Sunday." : "A new week starts Sunday.";
+      return `${left}, so ${goal} isn't reachable this week. ${next}`;
+    }
     if (thisWeekCount === 0) {
       return weekStreak > 0
         ? `Check in ${daysLeft} ${daysLeft === 1 ? "day" : "days"} this week to keep your streak.`

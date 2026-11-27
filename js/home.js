@@ -139,7 +139,7 @@
   );
   const checkedThisWeek = thisWeek.filter((day) => checkIns[day]).length;
   document.getElementById("week-summary").textContent =
-    `Checked in ${checkedThisWeek} of ${weekGoal} days this week.${best > 0 ? ` Best streak ${UI.plural(best, "week")}.` : ""}`;
+    `Checked in ${checkedThisWeek} of ${weekGoal} ${weekGoal === 1 ? "day" : "days"} this week.${best > 0 ? ` Best streak ${UI.plural(best, "week")}.` : ""}`;
 
   document.getElementById("progress-range").textContent = `Last 12 weeks · ${unit}`;
 
